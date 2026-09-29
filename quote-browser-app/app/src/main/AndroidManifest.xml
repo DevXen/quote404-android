@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.quotebrowser.app"
+    android:versionCode="169"
+    android:versionName="1.88.34">
+
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" />
+
+    <!-- Needed on Android 13+ for the optional Quote-of-the-Day reminder. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- v1.78 Quote alarm: exact daily alarm that reads a quote aloud. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Foreground service plumbing for the quote alarm's TTS speech. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- For the "Import from link" feature (fetches a quote from bash.org). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- For the daily quote wallpaper (normal install-time permission, no runtime prompt). -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+    <application
+        android:name=".QuoteApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Quote404"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.QuoteBrowser">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.QuoteBrowser">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Receive shared text from other apps into My Quotes. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- Launcher shortcuts: Random, endless deck, Search. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <activity
+            android:name=".CrashActivity"
+            android:exported="false"
+            android:theme="@style/Theme.QuoteBrowser" />
+
+        <!-- Widget setup: shown when placing a new home-screen widget. -->
+        <activity
+            android:name=".widget.WidgetConfigureActivity"
+            android:exported="true"
+            android:theme="@style/Theme.QuoteBrowser">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- v1.63: Android Auto media browser — quote radio on the car stereo. -->
+        <service
+            android:name=".ui.auto.RadioBrowserService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <!-- Quick Settings tile: instant random quote. -->
+        <service
+            android:name=".tile.QuoteTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_quote"
+            android:label="Random quote"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".widget.QuoteWidgetProvider"
+            android:exported="false"
+            android:label="Random Quote">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quote_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.QuoteWidgetSmall"
+            android:exported="false"
+            android:label="Random Quote (Small)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quote_widget_info_small" />
+        </receiver>
+        <receiver
+            android:name=".widget.QuoteWidgetLarge"
+            android:exported="false"
+            android:label="Random Quote (Large)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quote_widget_info_large" />
+        </receiver>
+        <receiver
+            android:name=".widget.QuizWidgetProvider"
+            android:exported="false"
+            android:label="Daily Quiz">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quiz_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.RandomQuoteWidgetProvider"
+            android:exported="false"
+            android:label="Random Quote (Tap to refresh)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/random_quote_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.StreakWidgetProvider"
+            android:exported="false"
+            android:label="Reading Streak">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/streak_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".worker.QuoteReminderReceiver"
+            android:exported="false" />
+        <!-- v1.78 Quote alarm: exact daily broadcast, app-internal only. -->
+        <receiver
+            android:name=".worker.QuoteAlarmReceiver"
+            android:exported="false" />
+        <!-- v1.78 Quote alarm speech: foreground TTS service. -->
+        <service
+            android:name=".worker.QuoteAlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+        <receiver
+            android:name=".worker.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".worker.QotdActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.quotebrowser.app.worker.QOTD_ACTION_FAVORITE" />
+                <action android:name="com.quotebrowser.app.worker.QOTD_ACTION_NEXT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Serves staged database copies to the share sheet (email, etc.). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.quotebrowser.app.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
+    </application>
+
+</manifest>

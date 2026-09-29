@@ -1,0 +1,29 @@
+/* Sample layout pack CSS: overrides the "css" field of layout.json. */
+.qb-quote {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: #f7f2e7;
+  color: #1a1a1a;
+  padding: 24px 28px;
+  margin: 12px 0;
+  border-top: 4px double #1a1a1a;
+  border-bottom: 4px double #1a1a1a;
+}
+.qb-site-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #555;
+  border-bottom: 1px solid #999;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.qb-quote-text { text-align: justify; line-height: 1.65; white-space: pre-wrap; }
+.qb-author { text-align: right; font-style: italic; margin-top: 10px; }
+.qb-divider { border: none; border-top: 1px solid #999; margin: 8px 0; }
+.qb-meta { font-size: 0.8em; color: #555; font-variant: small-caps; }
+.qb-rating { text-align: right; margin-top: 6px; color: #7a5c00; }
+.qb-source-url { margin-top: 8px; font-size: 0.8em; }
+.qb-source-url a { color: #555; }
+.qb-branding { margin-top: 10px; font-size: 0.75em; color: #999; text-align: center; }

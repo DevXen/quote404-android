@@ -1,0 +1,28 @@
+{
+  "voices": [
+    {
+      "key": "storyteller",
+      "name": "Sample Storyteller",
+      "engine": "gemini",
+      "baseVoice": "Aoede",
+      "gender": "female",
+      "description": "A warm cloud voice for narration-heavy quotes."
+    },
+    {
+      "key": "gruff",
+      "name": "Sample Gruff",
+      "engine": "gemini",
+      "baseVoice": "Fenrir",
+      "gender": "male",
+      "description": "A deep cloud voice for dramatic readings."
+    },
+    {
+      "key": "chipmunk",
+      "name": "Sample Chipmunk",
+      "engine": "builtin",
+      "pitch": 1.6,
+      "rate": 1.15,
+      "description": "A high-pitched built-in preset — pure novelty."
+    }
+  ]
+}

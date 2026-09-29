@@ -1,0 +1,16 @@
+{
+  "styles": [
+    {
+      "key": "terminal",
+      "name": "Terminal",
+      "description": "Green-on-black terminal look for HTML exports.",
+      "css": "body { background: #0a0f0a; color: #c8e6c8; font-family: 'Courier New', monospace; }\n.qb-page-title { color: #7fff9f; border-bottom: 2px solid #2d5a2d; }\n.qb-quote { background: #0d130d; border: 1px solid #2d5a2d; border-radius: 6px; }\n.qb-said-name { color: #7fff9f; font-weight: bold; }\n.qb-said-text { color: #d8f0d8; }\n.qb-action-line { color: #9fd6a4; font-style: italic; }\n.qb-timestamp { color: #5a7a5a; }\n.qb-other-line { color: #a8c8a8; }"
+    },
+    {
+      "key": "parchment",
+      "name": "Parchment",
+      "description": "Warm parchment paper look for HTML exports.",
+      "css": "body { background: #f4ecd8; color: #3a2f1d; font-family: Georgia, serif; }\n.qb-page-title { color: #5a3f1d; border-bottom: 2px solid #c8a86a; }\n.qb-quote { background: #faf4e4; border: 1px solid #d8c49a; border-radius: 10px; box-shadow: 2px 2px 6px rgba(90,63,29,.15); }\n.qb-said-name { color: #7a4f1d; font-weight: bold; }\n.qb-said-text { color: #3a2f1d; }\n.qb-action-line { color: #8a6a3a; font-style: italic; }\n.qb-timestamp { color: #a89468; }\n.qb-other-line { color: #6a5a3d; }"
+    }
+  ]
+}

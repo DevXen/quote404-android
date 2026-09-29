@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Staged database copies for the share sheet (backup / email). -->
+    <cache-path name="shared_dbs" path="shared_dbs/" />
+    <!-- Rendered quote card images for sharing. -->
+    <cache-path name="quote_cards" path="quote_cards/" />
+    <!-- v1.88.16: timestamped startup log for diagnosing slow launches. -->
+    <cache-path name="startup_logs" path="startup_logs/" />
+</paths>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Shows a random quote. Tap the widget for a new one; tap the text to open that quote in the app.</string>
+    <string name="shortcut_random">Random</string>
+    <string name="shortcut_random_long">Random quotes</string>
+    <string name="shortcut_deck">Deck</string>
+    <string name="shortcut_deck_long">Endless quote deck</string>
+    <string name="shortcut_search">Search</string>
+    <string name="shortcut_search_long">Search quotes</string>
+    <string name="shortcut_games">Games</string>
+    <string name="shortcut_games_long">Games hub</string>
+    <string name="shortcut_who_said">Who Said It</string>
+    <string name="shortcut_who_said_long">Play Who Said It</string>
+    <string name="widget_quiz_description">Daily who-said-it quiz. Tap the widget to play in the app.</string>
+    <string name="widget_random_quote_description">A random quote on your home screen. Tap the widget for a new one.</string>
+    <string name="widget_streak_description">Your reading streak at a glance. Tap the widget to refresh.</string>
+</resources>

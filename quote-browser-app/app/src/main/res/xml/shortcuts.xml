@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="qb_random"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_random"
+        android:shortcutShortLabel="@string/shortcut_random"
+        android:shortcutLongLabel="@string/shortcut_random_long">
+        <intent
+            android:action="com.quotebrowser.app.OPEN_RANDOM"
+            android:targetPackage="com.quotebrowser.app"
+            android:targetClass="com.quotebrowser.app.MainActivity" />
+        <categories android:name="android.shortcut.category.LAUNCHER" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="qb_deck"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_deck"
+        android:shortcutShortLabel="@string/shortcut_deck"
+        android:shortcutLongLabel="@string/shortcut_deck_long">
+        <intent
+            android:action="com.quotebrowser.app.OPEN_DECK"
+            android:targetPackage="com.quotebrowser.app"
+            android:targetClass="com.quotebrowser.app.MainActivity" />
+        <categories android:name="android.shortcut.category.LAUNCHER" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="qb_search"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_search"
+        android:shortcutShortLabel="@string/shortcut_search"
+        android:shortcutLongLabel="@string/shortcut_search_long">
+        <intent
+            android:action="com.quotebrowser.app.OPEN_SEARCH"
+            android:targetPackage="com.quotebrowser.app"
+            android:targetClass="com.quotebrowser.app.MainActivity" />
+        <categories android:name="android.shortcut.category.LAUNCHER" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="qb_games"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_games"
+        android:shortcutShortLabel="@string/shortcut_games"
+        android:shortcutLongLabel="@string/shortcut_games_long">
+        <intent
+            android:action="com.quotebrowser.app.OPEN_GAMES"
+            android:targetPackage="com.quotebrowser.app"
+            android:targetClass="com.quotebrowser.app.MainActivity" />
+        <categories android:name="android.shortcut.category.LAUNCHER" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="qb_who_said"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_who_said"
+        android:shortcutShortLabel="@string/shortcut_who_said"
+        android:shortcutLongLabel="@string/shortcut_who_said_long">
+        <intent
+            android:action="com.quotebrowser.app.OPEN_WHO_SAID"
+            android:targetPackage="com.quotebrowser.app"
+            android:targetClass="com.quotebrowser.app.MainActivity" />
+        <categories android:name="android.shortcut.category.LAUNCHER" />
+    </shortcut>
+</shortcuts>

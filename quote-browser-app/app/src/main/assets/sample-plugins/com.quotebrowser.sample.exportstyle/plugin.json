@@ -1,0 +1,42 @@
+{
+  "id": "com.quotebrowser.sample.exportstyle",
+  "name": "Sample Export Styles",
+  "author": "QuoteBrowser",
+  "version": "1.0.0",
+  "type": "export-style",
+  "entry": "styles.json",
+  "description": "Two sample HTML export styles bundled with QuoteBrowser 1.87+ to show how export-style packs work. Pick one in Export → HTML → Export style.",
+  "permissions": [
+    "export"
+  ],
+  "settings": {
+    "settings": [
+      {
+        "key": "serif_headings",
+        "type": "toggle",
+        "title": "Serif headings",
+        "description": "Render the page title and quote headers in a serif font. (Sample setting — it demonstrates a stored toggle; the pack's own CSS doesn't read it.)",
+        "default": true
+      },
+      {
+        "key": "footer_text",
+        "type": "text",
+        "title": "Footer text",
+        "description": "Custom line shown at the bottom of the settings page preview. (Sample setting.)",
+        "default": "Exported with QuoteBrowser"
+      },
+      {
+        "key": "accent",
+        "type": "choice",
+        "title": "Accent color",
+        "description": "Preferred accent for future styles in this pack. (Sample setting.)",
+        "options": [
+          "Cyan",
+          "Amber",
+          "Lime"
+        ],
+        "default": "Cyan"
+      }
+    ]
+  }
+}

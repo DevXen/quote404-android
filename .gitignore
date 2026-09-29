@@ -1,0 +1,48 @@
+# Quote404 manual-build gitignore — this project does NOT use Gradle.
+# The pipeline is apkbuild/{merge.py,build.sh,package.sh} driving
+# aapt2 / kotlinc / D8 directly. Everything below is regenerable.
+
+# Build outputs (the big one: compiled classes, dex, merged manifests, APKs)
+build/
+*.apk
+*.aab
+*.ap_
+
+# Downloaded / resolved Maven artifacts (regenerate with: python3 apkbuild/resolve.py)
+libs/
+*.aar
+
+# Gradle leftovers (the project ships Gradle wrapper files for reference,
+# but the build never runs Gradle)
+.gradle/
+local.properties
+gradle-app_output/
+
+# Logs
+*.log
+*.hprof
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Kotlin / Java incremental state
+*.class
+.kotlin/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+.vscode/
+
+# Signing: the release keystore lives in Clint's Secure Vault and
+# ~/workspace/homebrew/keys/ — it must NEVER be committed.
+*.jks
+*release*.keystore
+keystore-password.txt

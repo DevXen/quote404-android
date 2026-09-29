@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/streak_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="12dp"
+    android:background="@drawable/widget_background">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="READING STREAK"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="#9E9E9E"
+        android:letterSpacing="0.08" />
+
+    <TextView
+        android:id="@+id/streak_days"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="0"
+        android:textSize="44sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/streak_unit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="days"
+        android:textSize="14sp"
+        android:textColor="#BDBDBD" />
+
+    <TextView
+        android:id="@+id/streak_best"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Best: 0 days"
+        android:textSize="12sp"
+        android:textColor="#9E9E9E" />
+</LinearLayout>

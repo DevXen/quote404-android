@@ -1,0 +1,250 @@
+=== id=435135 ===
+ru: Андроид от айфона отличается, главным образом, тем, что в айфоне есть буква Й, а в андроиде - нет.
+en: The main difference between Android and the iPhone is that the iPhone has the letter Й, and Android doesn't.
+cyr: Й
+
+=== id=435161 ===
+ru: хxx: хочу сменить XFCE на lxde в бубунте. КАК???\nyyy: sudo apt-get install lxde\nхxx: установилось. как включить?\nyyy: не понял вопроса\nхxx: при запуске пишет, типа другой оконный менеджер уже запущен. куда что прописать/запустить надо?\nyyy: у тебя недоста
+en: хxx: wanna switch from XFCE to lxde on bubunta. HOW???\nyyy: sudo apt-get install lxde\nхxx: installed. how do I enable it?\nyyy: don't get the question\nхxx: on startup it says another window manager is already running.
+cyr: х
+
+=== id=435162 ===
+ru: ххх: на чём пишешь фронтенд?\nyyy: на костылях и велосипедах\nххх: ммм, хороший фреймворк!
+en: ххх: what do you write frontend in?\nyyy: crutches and bicycles\nххх: mmm, nice framework!
+cyr: х
+
+=== id=435194 ===
+ru: Приходит гламурная брюнетка в IT-отдел.\nххх: У нас не работает почта!\nууу: Наталья, у нас произошел сбой сервера, почта не работает у всей компании, мы работаем над этим.\nххх: У всей компании? А все в курсе?\nууу: Догадываюсь, что да.\nххх: Вы не знаете нав
+en: A glamorous brunette comes into the IT department.\nххх: Our email's not working!\nууу: Natalia, the server crashed, email is down for the whole company, we're working on it.\nххх: The whole company? Does everyone know?\
+cyr: ух
+
+=== id=435196 ===
+ru: Из обсуждения очередных новых шевронов на военной форме:\nXXX: А теперь они желтые с красной рамочкой. А звезды на погонах все равно зеленые\nYYY: Фи! На погонах надо сразу написать: "Капитан", "Лейтенант", и т.д.\nXXX: А вместо кокарды написать "кокарда" На р
+en: From a discussion of yet more new chevrons on the military uniform:\nXXX: And now they're yellow with a red frame. But the stars on the shoulder boards are still green\nYYY: Pah! They should just write on the shoulder bo
+cyr: ЙПавгдекнор
+
+=== id=435199 ===
+ru: green: я понял, чо гопники в начале фразы говорят "Э"\ngreen: это они хотят открыть кавычки, чтобы стринг в них написать, но забывают переключить раскладку
+en: green: I figured out why gopniks start sentences with "Э"\ngreen: they're trying to open quotes to write a string inside, but forget to switch the keyboard layout
+cyr: Э
+
+=== id=435204 ===
+ru: ххх: сначала мне в скайп постучался спамбот, косящий под девушку. От скуки мило с ним пообщался, но вдруг он прорекламировал какой-то левый сайт знакомств и отключился.\nххх: было скучно. я поиграл с акинатором.\nххх: затем ликдин предложил мне подключить конт
+en: ххх: first a spambot pretending to be a girl knocked on my skype. Out of boredom I chatted with it nicely, but then it advertised some shady dating site and disconnected.\nххх: I was bored. I played with Akinator.\nххх: 
+cyr: х
+
+=== id=435205 ===
+ru: Ххх: прикинь, она мне так и не дала после всего!\nУуу: Правильно, жену тебе нужно заводить, а не тренироваться по выходным в скоростном девкоклеении\nУуу: я вот вчера со своей занимался извращениями\nХхх: вау! С этого места поподробнее!\nУуу: заходит вечером в
+en: Ххх: imagine, she never put out after all that!\nУуу: Right, you need to get a wife, not train on weekends in speed girl-gluing\nУуу: like yesterday I was doing perversions with mine\nХхх: wow! Details from this point on
+cyr: УХух
+
+=== id=435208 ===
+ru: Обсуждение новости: "Через 40 лет секс с роботами станет обычным явлением".\n\nххх: Секс с техникой уже давно и повсеместно практикуется. Когда у меня был "Ваз", секс был каждую неделю и очень разнообразный. Плюс к этому, время от времени сношаешься с компом и
+en: Discussion of the news: "In 40 years, sex with robots will be commonplace".\n\nххх: Sex with machinery has long been practiced far and wide. When I had a VAZ, there was sex every week and very diverse. Plus, from time to
+cyr: х
+
+=== id=435212 ===
+ru: xxx: на клавиатуре буква д рядом с буквой ж\nxxx: вместо удалить легко написать ужалить\nxxx: вы действительно хотите ужалить это поле?)\nxxx: если вы пчела, то вы умрёте. хотите продолжить?
+en: xxx: on the keyboard the letter д is next to the letter ж\nxxx: instead of "delete" it's easy to type "sting"\nxxx: do you really want to sting this field?)\nxxx: if you're a bee, you'll die. continue?
+cyr: дж
+
+=== id=435220 ===
+ru: ххх: Видео которое начинается со слов "когда-то люди думали что параллельные прямые не пересекаются" должно иметь рейтинг 18+
+en: ххх: A video that starts with the words "once people thought parallel lines never intersect" should be rated 18+
+cyr: х
+
+=== id=435225 ===
+ru: I: [VIDEO] Сварщик начал резать газовый баллон\n...\nS: Главный вопрос — ЗАЧЕМ? Зачем он хотел его распилить?\nХ: Может кастрюлю хотел сделать, кто ж его знает. Сварщики вообще смелые люди, любящие огонь, разрушения и колхозить разное из подножного материала. 
+en: I: [VIDEO] A welder started cutting a gas cylinder\n...\nS: The main question is — WHY? Why did he want to saw it up?\nХ: Maybe he wanted to make a pot, who knows. Welders are generally brave people who love fire, destru
+cyr: Х
+
+=== id=435242 ===
+ru: xxx: да реально, родители опять вырастили в саду плантации кабачков-помидоров-огурцов и теперь впаривают каждый день. а мы дома-то не бываем, пропадет у нас все. я уже боюсь этих смс от мамы ежедневных: ЧТО С ОВОЩАМИ?!\nууу: напиши ей "спасибо, мои коллеги тож
+en: xxx: seriously, my parents grew whole plantations of zucchini-tomatoes-cucumbers in the garden again and now push them on me every day. and we're never home, it'll all rot. I'm already scared of mom's daily texts: WHAT A
+cyr: у
+
+=== id=435252 ===
+ru: 7 августа\nххх: Добрый день, увидел вас в сообществе N, вас интересуют наши курсы по созданию сайтов?\nууу: Ноуп, я на бэкенде работаю)\n10 августа\nххх: Добрый день, увидел вас в сообществе N, вас интересуют наши курсы по созданию сайтов?\nууу: Прошло всего т
+en: August 7\nххх: Good afternoon, saw you in community N, are you interested in our website-building courses?\nууу: Nope, I work backend)\nAugust 10\nххх: Good afternoon, saw you in community N, are you interested in our we
+cyr: ух
+
+=== id=435254 ===
+ru: ххх: новость на яндексе "у сборной России по футболу появился новый тренер" принимается в мозг как "осиротевшие котята нашли новых родителей".
+en: ххх: the Yandex news "the Russian national football team got a new coach" is processed by the brain as "orphaned kittens found new parents".
+cyr: х
+
+=== id=435272 ===
+ru: Сидят рядом папа программист, семимесячный детёныш и мама.\nxxx: Ну да, пузень похожа. Только разница в том, что у него то она рассосётся когда он ходить начнёт.\nххх: Возможно у меня тоже... :(
+en: A programmer dad, a seven-month-old baby, and mom sitting nearby.\nxxx: Yeah, the belly looks similar. Only difference is his will go away once he starts walking.\nххх: Maybe mine will too... :(
+cyr: х
+
+=== id=435276 ===
+ru: ххх хвастается новой девушкой:\nххх: У моей вообще довольно расширенные понятия мимимишности. Кроме котиков, песиков и прочей пушистой живности, туда входят и неживые предметы, особенно всякие заброшенные и раздолбанные объекты. Удивительно смотрится: под фото
+en: ххх bragging about his new girlfriend:\nххх: Mine has pretty expanded notions of cuteness. Besides kitties, doggies and other fluffy critters, it includes inanimate objects, especially all kinds of abandoned and busted-u
+cyr: х
+
+=== id=435278 ===
+ru: ххх кидает в чат картинку, где в машине вместо вонявки висит батон колбасы.\nууу: Отличный ароматизатор, ящетаю!\nххх: А руль в пробке грысть не начнешь от таких аромтизаторов?\nууу: Зачем грызть руль, когда можно грызть ароматизатор?
+en: ххх throws into the chat a picture where instead of an air freshener there's a stick of sausage hanging in the car.\nууу: Excellent air freshener, I reckon!\nххх: Won't you start gnawing the steering wheel in traffic fro
+cyr: ух
+
+=== id=435283 ===
+ru: xxx: Что с вашим плеером? Не воспроизводиться ни фига.\nyyy: Он оснащён искусственным интеллектом, который банит людей, путающих тся/ться.
+en: xxx: What's wrong with your player? Won't play a damn thing.\nyyy: It's equipped with artificial intelligence that bans people who confuse ться/тся.
+cyr: стья
+
+=== id=435296 ===
+ru: ххх: вот вы всё ржёте про защитную плёнку на тачскрине, а я вот в осадок выпал\nххх: в прошлом году гостил у тётки, она новую кухню купила\nххх: в этом году приехал, смотрю: неужели МДФ с мебели слезает?!\nххх: нет! ЗАЩИТНАЯ ПЛЁНКА!!!
+en: ххх: you all laugh about the protective film on touchscreens, but I was floored\nххх: last year I stayed with my aunt, she'd bought a new kitchen\nххх: this year I came, I look: is the MDF peeling off the furniture?!\nхх
+cyr: х
+
+=== id=435297 ===
+ru: ххх: похоже, подзабыла я сюжет Гарри Поттера...\nууу: пересмотри\nzzz: перечитай...\nyyy: и убедись, что вышел за край...\nzzz: за рубежи отчётных границ\nxxx: и сверстанных схем!\nууу: *застряс хаером*\nххх: *убежала за косухой с Кинчевым*
+en: ххх: looks like I've forgotten the Harry Potter plot...\nууу: rewatch it\nzzz: reread it...\nyyy: and make sure you've gone beyond the edge...\nzzz: beyond the frontiers of reporting boundaries\nxxx: and of laid-out sche
+cyr: ух
+
+=== id=435299 ===
+ru: xхх: сын директора продал трехлетний кроссовер, т.к. было дорого его содержать, и купил вместо него ТАМ-ДАМ - кроссовер того-го же производителя, только обновленную модель.\nххх: хорошо директору живется на наши урезанные з/п
+en: xхх: the director's son sold a three-year-old crossover because it was expensive to maintain, and bought instead TA-DA — a crossover from the same manufacturer, only the updated model.\nххх: good life the director has on
+cyr: х
+
+=== id=435300 ===
+ru: ааа: Открываю историю болезни\nТам написано шшшшшшшшшш\nШшшшшшшшш\nШшшшшшшшшшш\nИ в конце зшшшшшшшшш
+en: ааа: Opening the medical history\nIt says shhhhhhhhhh\nShhhhhhhhh\nShhhhhhhhhhh\nAnd at the end zshhhhhhhhh
+cyr: а
+
+=== id=435306 ===
+ru: ххх: ты мне льстишь...\nууу: да, льстю. и льстя моя страшна!
+en: ххх: you're flattering me...\nууу: yes, I flatter. and my flattery is terrible!
+cyr: ух
+
+=== id=435308 ===
+ru: ХХХ: цветами тоски и печали окрашен мой лик\nMeGoMa4o: че?\nХХХ: :(\nMeGoMa4o: грустиш типо?\nХХХ: ты подобно первобытным людям способен декодировать информацию, заключенную только в примитивных графических изображениях?\nMeGoMa4o: че???\nХХХ: XD\nMeGoMa4o:че 
+en: ХХХ: my face is painted with the colors of longing and sorrow\nMeGoMa4o: what?\nХХХ: :(\nMeGoMa4o: you sad or something?\nХХХ: are you, like primitive people, able to decode information contained only in primitive graphi
+cyr: Х
+
+=== id=435327 ===
+ru: Скайп двух бывших коллег. X уволилась полгода назад, Y продолжает работать.\nх: как у вас там дела?\nу: как на Титанике после встречи с айсбергом\nу: музыка играет, кухня работает, а пассажирам третьего класса еду уже не дают
+en: Skype of two former colleagues. X quit half a year ago, Y keeps working.\nх: how are things with you?\nу: like on the Titanic after meeting the iceberg\nу: the music's playing, the kitchen's working, but third-class pass
+cyr: ух
+
+=== id=435330 ===
+ru: ххх: я ж умная девочка, ты сомневаешься?\nххх: до меня в свое время не сразу дошло, как в ворде писать римские цифирки\nххх: и я находила через поисковик статью, в которой есть римские цифры\nххх: копировала и компоновала как надо в своем документе ^^\nххх: до
+en: ххх: I'm a smart girl, you doubt it?\nххх: back in the day it didn't dawn on me right away how to type Roman numerals in Word\nххх: so I'd find through a search engine an article that has Roman numerals\nххх: copied and 
+cyr: х
+
+=== id=435331 ===
+ru: yyу: Цифры в числе Пи случайны, и в нём вероятны совершенно любые последовательности цифр. Это значит, что число Пи с определенной долей вероятности содержит в своей бесконечной последовательности любую информацию, представимую в цифровом виде. Программы, музы
+en: yyу: The digits in Pi are random, and any sequences of digits are probable in it. This means Pi with a certain probability contains in its infinite sequence any information representable digitally. Programs, music, films
+cyr: у
+
+=== id=435335 ===
+ru: ччч: Позавчера впервые за 21 год лично столкнулся с капризами скамьесидящих бабулек. Выносил строительный мусор со своей квартиры, и на распашку открыл домофонную дверь в подъезд так, чтобы доводчик ее не смог закрыть. Когда вернулся с помойки, бабуська была н
+en: ччч: The day before yesterday, for the first time in 21 years, I personally encountered the whims of bench-sitting grannies. I was hauling construction trash out of my apartment, and opened the intercom door to the build
+cyr: ч
+
+=== id=435340 ===
+ru: ххх: А интересно, как оценивают способности к руководству людьми у претендующих на руководящие должности?\nууу: Выдают тестовых людей и просят ими поруководить.
+en: ххх: I wonder, how do they assess leadership abilities in candidates for leadership positions?\nууу: They give them test people and ask them to lead them.
+cyr: ух
+
+=== id=435351 ===
+ru: В комментариях к посту с картинками бумажных кукол, изображающих супружескую чету Великобритании:\nххх: Куклы замечательные, но не пойму никак, чего все носятся с этими "аглицкими прынцами и прынцессами"? На кой они нам сдались?\nууу: Своих принца и принцесс м
+en: In the comments to a post with pictures of paper dolls depicting the British royal couple:\nххх: The dolls are wonderful, but I just don't get why everyone's fussing over these "English princes and princesses"? What do w
+cyr: ух
+
+=== id=435353 ===
+ru: Возвращаюсь вчера с работы, на работе дедлайн, весь такой сонный и уставший, всю ночь код правил, слышу разговор бабушки с внучком\nххх: а почему дядя так шатается?\nууу: не смотри на него... это наркоман!
+en: Coming home from work yesterday, deadline at work, all sleepy and tired, fixed code all night, I hear a granny talking to her grandson\nххх: why is that uncle staggering like that?\nууу: don't look at him... he's a junki
+cyr: ух
+
+=== id=435358 ===
+ru: ххх: мой отец, сливая дохлую аквариумную рыбку в унитаз, сказал мне неосторожную фразу - мол, в море пусть живет\nxxx: на следующий день я отпустил в море всех рыб...
+en: ххх: my father, flushing a dead aquarium fish down the toilet, said a careless phrase to me — like, let it live in the sea\nxxx: the next day I released all the fish into the sea...
+cyr: х
+
+=== id=435361 ===
+ru: ХХХ: " В тёмные времена хорошо видно светлых людей" © Э.М.Ремарк\nУУУ: - Их подсвечивают снизу. Кострами... Т.Торквемада :-D
+en: ХХХ: "In dark times, bright people are easy to see" © E.M. Remarque\nУУУ: - They're lit from below. By bonfires... T. Torquemada :-D
+cyr: УХ
+
+=== id=435365 ===
+ru: ааа: обновление надо делать.\nббб: а в чем обновление?\nааа: чтоб в меню 16-й год появился.\nббб: а они не знали, что он будет?\nввв: они, когда в 14-м эту хрень писали, не верили, что до 15-го доживут.
+en: ааа: need to do the update.\nббб: what's the update?\nааа: so the 16th year appears in the menu.\nббб: they didn't know it would come?\nввв: when they wrote this crap in '14, they didn't believe they'd live to see '15.
+cyr: абв
+
+=== id=435372 ===
+ru: ХХХ: Слушай, Серега, вот я одно понять не могу. Как Михалыч со своим чувством юмора до своих лет дожил?\nУУУ: А что сучилось то?\nххх: Короче, он на прошлые выходные к себе на фазенду Леху и еще двоих пригласил, сарайчик поправить, в баньке попариться, мяса по
+en: ХХХ: Listen, Seryoga, there's one thing I can't get. How did Mikhаlych live to his age with his sense of humor?\nУУУ: What happened?\nххх: So, last weekend he invited Lyokha and two others to his dacha, to fix up the she
+cyr: УХаух
+
+=== id=435381 ===
+ru: ххх: У меня соседи сверху натуральные фанаты игры престолов :(\nууу: в смысле?\nххх: если верить звукам сверху, то они сначала друг дружку трахают, а потом убивают.\nххх: или в обратном порядке...
+en: ххх: My upstairs neighbors are real Game of Thrones fans :(\nууу: what do you mean?\nххх: judging by the sounds from upstairs, first they screw each other, then they kill each other.\nххх: or in reverse order...
+cyr: ух
+
+=== id=435390 ===
+ru: ХХХ: Вчера экзамен на тещу сдавала, внезапно.\nХХХ: Ездили на кладбище, вернулись - дома дочь с женихом. Он при наших просторах (2 комнаты на четверых) обычно на минутку заскакивает, пока она собирается, и все. А тут они чего-то капитально зависли. Зависли - з
+en: ХХХ: Yesterday I took the mother-in-law exam, suddenly.\nХХХ: We went to the cemetery, came back — home there's my daughter with her fiancé. With our spaciousness (2 rooms for four) he usually pops in for a minute while 
+cyr: УХ
+
+=== id=435396 ===
+ru: ХХХ: Ну понятно, что сами не знают\nХХХ: Анализы все хорошие\nХХХ: Просто поджелудочная с чем то не справилась\nХХХ: Сидит пазлы собирает\nууу: Поджелудочная???\nууу: Ты ей попроще пазлы давай, чтоб справлялась
+en: ХХХ: Well it's clear they don't know themselves\nХХХ: All tests are good\nХХХ: It's just the pancreas couldn't handle something\nХХХ: It's sitting doing puzzles\nууу: The pancreas???\nууу: Give it simpler puzzles so it c
+cyr: Ху
+
+=== id=435397 ===
+ru: ххх: Настоящая забота - это когда ты из дома выходишь, а тебе вслед несётся грозное "КУДА?! А шапка?!"\nууу: Угу, и плевать, что на дворе лето.
+en: ххх: Real care is when you walk out of the house and a menacing "WHERE?! And your hat?!" flies after you\nууу: Yep, never mind it's summer outside.
+cyr: ух
+
+=== id=435408 ===
+ru: Ххх: раньше мигренями мучилась, но вот переехала к тебе, и голова уже полгода не болит.\nУуу: это все мой целебный храп.
+en: Ххх: I used to suffer from migraines, but since I moved in with you, my head hasn't hurt for half a year.\nУуу: it's all my healing snore.
+cyr: УХух
+
+=== id=435413 ===
+ru: ХХХ: я надеюсь, что в будущем изобретут способ закачки информации напрямую в мозг\nХХХ: биофлэшка какая-нибудь\nYYY: как в матрице можно провод втыкать\nХХХ: ага, только боюсь, можно будет быстро био-бсод получить)))\nYYY: или вирус какой-нибудь! ходишь и гово
+en: ХХХ: I hope in the future they invent a way to upload information directly into the brain\nХХХ: some bio-flash drive\nYYY: like in the Matrix you can plug in a cable\nХХХ: yeah, only I'm afraid you could quickly get a bi
+cyr: Х
+
+=== id=435429 ===
+ru: ххх: если бы человек-муравей заползал бы в уши своим врагам и уже там бы увеличивался в размерах - фильм бы был намного красочнее..\nyyy: а если бы не в уши то и 18+
+en: ххх: if ant-man crawled into his enemies' ears and grew in size there — the movie would've been much more colorful..\nyyy: and if not into ears then 18+
+cyr: х
+
+=== id=435430 ===
+ru: Пишу программу автоматизации. Вопрос представителю на объекте.\n\nххх: Есть ли возможность передать нам схему электрическую принципиальную?\nууу: Что за схему?\nууу: Более чётко ставьте задачу.\n. . .\nууу: Я ещё раз спрошу наладчиков. Но меня не понимают.
+en: Writing an automation program. Question to the rep at the site.\n\nххх: Is there a way to get the electrical schematic from you?\nууу: What schematic?\nууу: State the task more clearly.\n. . .\nууу: I'll ask the adjuster
+cyr: ух
+
+=== id=435437 ===
+ru: Знакомая учится на программиста:\n\nххх: Правда, сегодня узнала, что парсер писать было необязательно... О_о Не, я, конечно, рада, что написала, но нервов мне это стоило ого-го. И такая фигня не первый раз уже, да что за напасть! То вместо бутстрапа бэкбоун вы
+en: A friend is studying to be a programmer:\n\nххх: True, today I learned writing the parser wasn't required... O_o No, I'm glad I wrote it, of course, but it cost me so many nerves. And this crap isn't the first time, what
+cyr: х
+
+=== id=435444 ===
+ru: ххх: Здравствуй, дружище! Сколько лет сколько зим! Как поживаешь, кем сейчас работаешь?\nууу: Да так, потихонечку. Работа лёгкая, иногда даже держу в руках миллионы, сам того не замечая.\nххх: Ого, ничего себе работа! Не то что я, усердно работаю а в карманах 
+en: ххх: Hello, old friend! Long time no see! How are you, what do you do now?\nууу: Oh, so-so. The work's easy, sometimes I even hold millions in my hands without noticing.\nххх: Wow, what a job! Unlike me, working hard wit
+cyr: ух
+
+=== id=435447 ===
+ru: yyy: есть мороженое со вкусом чили\nххх: у чили нет вкуса. он просто жжёт, как будто тебе в лицо перцовым баллоном брызнули\nможно съесть обычный стаканчик и в лицо себе брызнуть\nразницу не заметишь\nyyy: вот. у тебя есть идея для стартапа )\nххх: - будешь се
+en: yyy: there's chili-flavored ice cream\nххх: chili has no flavor. it just burns, like you got sprayed in the face with pepper spray\nyou can eat a regular cone and spray yourself in the face\nyou won't notice the differen
+cyr: х
+
+=== id=435469 ===
+ru: X: Да что вы знаете о беспомощности\nх: Сегодня перед сном взял ноутбук к себе. Ну и смотрел видео, поставив ноутбук перед собой, а сам лежал на пузе\nх: Через какое то время начал засыпать\nх: Последнее, что помню - отчаянная попытка выключить ноут, но у меня
+en: X: What do you know about helplessness\nх: Today before bed I took the laptop with me. Was watching videos, laptop in front of me, lying on my belly\nх: After a while I started falling asleep\nх: The last thing I remembe
+cyr: х
+
+=== id=435471 ===
+ru: Из обсуждения Windows10:\nххх: Где нажать кнопку чтобы комп с нашей любимой системой ПЕРЕСТАЛ как прокаженный включаться и выключаться раз в 5 минут начиная с 3 часов ночи до 5ти утра... в дни когда приходят обновления?\nЛадно я понимаю что у него где-то пропи
+en: From a Windows10 discussion:\nххх: Where do I press the button so the computer with our beloved system STOPS turning on and off like a leper every 5 minutes from 3 AM to 5 AM... on days when updates come?\nFine, I get th
+cyr: х
+
+=== id=435475 ===
+ru: Новость: Samsung выпустит 18-дюймовый Android-планшет.\nХХХ: А как им копать теперь?\nYYY: Вместо ковша.
+en: News: Samsung will release an 18-inch Android tablet.\nХХХ: And how do we dig with it now?\nYYY: Instead of a shovel.
+cyr: Х
+

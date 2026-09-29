@@ -1,0 +1,256 @@
+@@@436036@@@
+Came to the hospital for a certificate from the narcologist.
+I enter the office and right away the question, do I have 5 thousand (Belarusian)
+I said yes, sincerely not understanding why he needs to know, since I'm not a drug addict anyway and will pass the checks without bribes. Then the doctor said to show the bills.
+In bewilderment I take out the money. And then he says:
+"Here's your certificate, you're healthy, drug addicts don't have that kind of money!"
+@@@436037@@@
+xxx: I just executed code through such a sneaky backdoor that I don't even know how to react: be proud or ashamed of this deed
+@@@436038@@@
+xxx: Come on, three layers of tile on the bathroom floor.
+xxx: My friend's flat on the 3rd floor has linoleum in the kitchen, under it a wooden floor, and under the wooden floor — ASPHALT.
+@@@436039@@@
+Discussion of the news: "Russian scientist tests on himself an ancient bacterium preserved in permafrost. It's about several million years old. But the amazing viability of the microorganisms has no explanation yet. They may appear after cryologist Anatoly Brushkov introduces the bacterium into his organism. And then — possibly — the secret of eternal life will be found"
+
+Maxim Timonov: Oh, I've seen that in a movie. Then he'll start glowing eyes in the dark, and also devouring colleagues and household members.
+@@@436040@@@
+xxx: The ideal city for traditional Russian women's leisure — Novokuznetsk. Judging by the coat of arms — it has everything needed to party properly.
+@@@436041@@@
+A friend's mom works at a pharmacy. A gloomy young man comes in, sad like that.
+- "Give me, please, — he says, — a pregnancy test.
+- "Maybe you want some valerian too? — asks the friend's mom.
+- "Go ahead, — the young man sighed quite sadly.
+Three days later he came again, already hale and hearty and cheerful.
+- "You know, the valerian helped — the test is negative!
+- "I had no doubt, now I'll recommend it to everyone! — answered the friend's mom.
+@@@436042@@@
+Sergey: a dude sent a letter to support. quoting: "The navigator borokhlit". That's it.
+Evgeny: well help the dude, it's borokhlit after all
+Nikita: He just didn't know how to start a conversation. You must find out what and how BOROKHLIT
+Sergey: he's been answering this difficult question for five hours now
+Nikita: Something serious happened in short
+Nikita: five hours can't formulate
+Nikita: ass
+@@@436043@@@
+xxx: Jokes aside, I asked my girlfriend not to invent arguments in a dispute when her own run out, but just say "Oy, that's it!". Life got noticeably simpler ))
+@@@436044@@@
+Tasya wants to watch cartoons, comes up and says: "Put on the cartoon about the Cat Behemoth for me". We're in shock, because first, where does a four-year-old know this character from, and second, since when is there an animated version of "The Master and Margarita". And only after leading questions was it established that she meant "The Kitten from Lizyukov Street", which indeed in the plot turned into a behemoth. But damn, such an interpretation really delighted us!
+@@@436045@@@
+xxx: Who, me scared? Me scared??! You haven't seen me truly scared yet!!
+@@@436046@@@
+overheard:
+xxx: did you really lose your card?
+yyy: yeah
+xxx: why don't you block it?
+yyy: why bother, it's a credit one
+@@@436047@@@
+... Well, you, apparently, are still quite a kid on a bicycle.
+God forbid you, in the middle of traffic, at speed, get a midge in your eye.
+One time is enough.
+Completely.
+And a comrade once got a May beetle on a country road, like a rocket from a MANPADS.
+And flew off the road like a downed Messerschmitt.
+@@@436048@@@
+xxx: I burn 1500 kilocalories an hour, and that's not the limit
+yyy: now I understand why on your avatar you're holding your pants.
+@@@436049@@@
+xxx:
+Once came time to upgrade the phone, chose a certain model, found via the internet a shop with a suitable price. Arrived, showed, everything works, filled in the warranty, put my signature, exchanged a couple phrases with the seller, said goodbye. I leave the store and look: there's no change. I return for it — the seller hesitated: "And you, he says, haven't paid for the phone yet..."
+@@@436050@@@
+xxx: Our weather is like:
+1. Turn on DDT
+2. Cover up
+3. Suffer
+@@@436051@@@
+xxx: yeah she apparently wants it
+yyy: you're at it again
+yyy: it's like coming to ice fishing
+yyy: and sitting at someone else's worn-out hole
+yyy: fish kinda sorta bites
+yyy: but something's off
+@@@436052@@@
+xxx:
+boolean b;
+if ( b.toString().length <5 ) {
+....
+}
+
+yyy: I'd also walk the string char by char and look each char in the eyes )
+@@@436053@@@
+Larry Wall, creator of the Perl programming language, in his speech at the Exploratorium museum in San Francisco, presented the first test release of Perl 6.0.0, joking that now the main priority will be fixing bugs that may accidentally be taken for new features.
+@@@436054@@@
+Vishnya: The water in the river is so clean you can see all the garbage.
+@@@436055@@@
+Signed up at our departmental clinic to see a doctor at 17:00. I come on time — there, unusually, a huge queue of pensioners signed up for earlier times.
+Well, I say, fathers, what's the situation here?
+They: you see yourself — there's a lunar eclipse today. Sit, wait calmly, you'll get through today :D .
+Me: no, I'll go home.
+They: what's wrong with you, do you have seven kids or something?
+Me: six :D
+They: well then sit all the more, where's the rush!
+@@@436056@@@
+Discussion of the news "Domestic protected Linux distro Zarya is ready for deployment"
+xxx: Don't know about performance and security, but with names we somehow didn't get lucky...
+yyy: It's in your head that it didn't get lucky. Compared to Ubuntu/Ebubunu, Debian/Raspbian, Fidora/Pidora — the name "Zarya" is quite an excellent Russian word.
+xxx: It got worn out in street names, sovkhozes and such, after the USSR. Have other words run out already?
+zzz: I don't remember a single sovkhoz, street or distro named "Pupsik".
+Let's name the next distro "Pupsik".
+Instead of a repository you can use "Laryok". "Went to the laryok, stocked up on new nginx and wesnoth" will sound more impressive in the tram.
+@@@436057@@@
+xxx: sorry, what's 420?
+yyy: it's the meaning of life, the universe and everything else, multiplied by 10
+@@@436058@@@
+- And what's your VUS?
+- I can interrogate prisoners!
+- Wow, damn.
+- Relax) military translator.
+@@@436059@@@
+Story from the cat-owners forum:
+xxx: Two little mugs somehow picked out of the iron the wheel that turns to set the ironing mode. How they did it, me and my husband — both with higher education — can't understand, just as we can't put it back. Result, probably a new iron )
+@@@436060@@@
+From geektimes:
+"The Human Phantom" will open wide possibilities for medics. A woman's corpse was cut into 5000 pieces and scanned.
+
+Comment:
+Koobeton: She must have really sawed away at her husband in life, for him to saw her like that after her death...
+@@@436061@@@
+Xxx: I called up Vinni here, he won't go anywhere without Igor and Sanya. And he doesn't care there's no room. Like, all or nothing
+Yyy: wet wipes, damn. They also always climb out of the pack all together through the little hole and squeak about all or nothing
+@@@436062@@@
+xxx: dude
+xxx: hurry up with selling the motorcycle
+xxx: because I'm no expert, but it's snowing there
+@@@436063@@@
+diamant: You remember Canakau, right?
+diamant: So, he made a voodoo doll of himself, and all day lovingly scratched its back.
+@@@436064@@@
+The middle one (5 years old) plays checkers with dad. The husband simultaneously plays his game on the tablet. I hear the husband asking:
+- And where's my king?
+- Died.
+- Did you kill it?
+- No. Just died of old age.
+@@@436065@@@
+showed my husband in SP an interesting knife, of a screw shape, like three blades twisted
+Husband:
+- let's buy it! I'll show it to some clients, say it's for the trickiest asses...
+@@@436066@@@
+xxx: you can't drink away talent.
+yyy: actually, in ancient times a talent was called a pood-weight ingot of gold.
+xxx: that's what I'm saying... you can't drink it away.
+@@@436067@@@
+XXX: We just have different approaches to work.
+YYY: That's for sure. I'm offered money — I don't take it, and you ask, but they don't give you.
+@@@436068@@@
+Zhenya:
+how I want to sleeeeep
+can't think at all
+
+Kheroboets:
+and how is that different from your usual state?
+
+Zhenya:
+now I have an excuse
+@@@436069@@@
+The Internet persistently pushes ads for a handmade clutch bag (with a mobile phone compartment) for men:
+
+"Documents, license, passport, money, credit cards ...and not only — all this calmly fits in this stylish practical men's wallet. Quality and good functionality will leave no one indifferent!"
+
+The brain automatically searches the comments for the ad slogan of this outrage: "Lose everything at once!"
+@@@436070@@@
+From the market.
+Review of a dishwasher, relating to drawbacks:
+Before I was too lazy to wash dishes by hand — now I'm too lazy to load them into the dishwasher...
+@@@436071@@@
+Photo of two books. Per the contest rules you need to guess the "manly" books by the cover.
+
+Kh.: Strength of materials
+
+K.: You're close to the truth.
+But you're too lazy to open the comments :-)
+Strength of materials was among the options...
+
+Kh.: Well really not a day to read comments (
+Then it's Landau Lifshitz
+There is no more manly book
+
+K.: The previous option was warmer
+
+Kh.: What can be warmer than quantum mechanics)
+
+K.: Warm tube quantum mechanics...
+
+Kh.: I once opened the first volume of Landau-Lifshitz and at the very beginning saw "Let's take the Lagrangian" and closed it)
+
+K.: Come on, you took the volume — take the Lagrangian too. That's not serious :-)
+You need to be able to answer for your actions
+
+Kh: I can't take the Lagrangian
+My mom doesn't allow me
+@@@436072@@@
+Zuka: Nothing invigorates you for work accomplishments in the morning like a boss back from vacation.
+@@@436073@@@
+xxx: I remember, we sat down to watch the MMM movie. The 90s, all that. And then bam — the lights get cut for 2 hours. Now that's what I call full immersion in the atmosphere!
+@@@436074@@@
+v_vodokachkin:
+
+An acquaintance who's a district cop told a truly wondrous tale.
+
+To one and the same debtor, living in an ordinary entrance of an ordinary house, delegations from two collection agencies arrived at the same time with their pragmatic goals...
+
+Near the victim's door they collided nose to nose and couldn't come to an agreement on the further procedure and role distribution during it. Word by word, a serious fight broke out on the stair landing.
+
+All would be fine, but, to the misfortune of the fighters against unpaid debts, in the neighboring flat a numerous male company was culturally resting over a glass of tea (well, what's wrong with that, after all?). The noise in the entrance offended the hearing of the resting, probably at that time heeding the melodies of Brahms or Vivaldi, they left the abode of rest and in nonverbal form expressed to the disturbers of peace the full measure of their indignation. But this measure was deemed insufficiently convincing, and the collectors, unexpectedly finding themselves in the epicenter of popular indignation, were twisted and dragged, despite attempts to resist, to the police post. Where the mentioned district cop took them into his embrace, rubbing his hands in anticipation:)
+
+Such is life. Don't go, citizens, to work as collectors — it's fraught!
+@@@436075@@@
+my youngest son was also a SCHOOL DIRECTOR last year :D
+So they, the piglets (at his instigation!) on self-government day replaced all the PORTRAITS in the hall!!!
+And without approval from the administration.
+The son at school was a "jack of all trades" — in general, all the equipment etc. was on him. So they specially stayed after the rehearsal of the concert for teacher's day (like, tidying the hall, setting up equipment) — waited until all the teachers left — and replaced them!!! (and he had established relations with the security guard, and he BELIEVED — that this action was approved).
+But when in the morning the director discovered Vitka's "mug" instead of her own (and the others' too) — credit where due, she took it adequately, with understanding and humor
+@@@436076@@@
+YouTube, video of a Russian workshop in which shovels are made from rails.
+
+Comment:
+- They didn't show the second workshop here. There they make rails from shovels.
+@@@436077@@@
+xxx: in wartime the sine value can reach two
+yyy: Is that good or bad?
+zzz: That's per regulations.
+@@@436078@@@
+Husband: are you purring at the cat?
+Me: yeah.
+Husband: in soviet russia cats don't purr for you. You purr for cats.
+@@@436079@@@
+Found in one project's bug tracker
+...
+Type: defect
+Problem: report is meaningless (according to YYY)
+Cause: customer requirements
+...
+@@@436080@@@
+xxx: hauling from the Epicenter in one hand a bag with various repair stuff, in the other — several long tile profiles (such long things that are inconvenient to carry)
+a woman approaches and hands me a newspaper.
+I'm thinking: in the teeth. stick this newspaper in my teeth, bitch!
+@@@436081@@@
+lihodar:
+two years ago took a photo before starting home workout.
+today took the second.
+
+lihodar:
+a brief history of turning from a skinny runt into a fat slob.
+@@@436082@@@
+xxx: With a webcam I managed to see my tonsillitis and my hemorrhoids...
+@@@436083@@@
+Glamych:
+Waiting for a holy war on Chrome vs FF.
+
+Windermere:
+There won't be one. We're adults and don't fall for such primitive provocations. We'll just say Firefox is better and go about our business.
+@@@436084@@@
+Doing repairs in the salon, I due to a bunch of other work and lack of relevant repair skills sit staring at the laptop, the sweetie rushes with a roller around the bar, painting one wall then another. People come to visit. Then:
+XXX: YYY, why are you sitting at the comp? the girl is working, and you...
+YYY: My arm curvature radius is directly proportional to the diameter of the ass they grow from.
+ZZZ(girl): Yeah, and the proportion tends to one to one. Better I do it myself...
+@@@436085@@@
+Sam258: Don't put, please, your foot cream tube next to my toothpaste...

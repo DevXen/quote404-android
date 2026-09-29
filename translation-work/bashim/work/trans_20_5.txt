@@ -1,0 +1,469 @@
+###402463
+xxx: Today in the metro I saw a bunch of gopniks kicking a newspaper vending machine and shouting: "we don't need a f*cking newspaper! Give us a ticket, damn!!!!!"
+xxx: The ticket machine for 1-2 rides was standing nearby...
+###402464
+xxx: 1 AM, February 9
+xxx: the yard between two dorms
+xxx: a hysterical male scream from the street "SVEEETAAAAA! HAPPY NEW YEEEEEAR!!!"
+xxx: the neighbors' window to the left opens, where a student drinking party is in full swing
+xxx: the sound of something flying
+xxx: the sound of breaking glass
+xxx: a hysterical scream half an octave higher "SVEEETAAAAA! BRING OUT THE BAAANDIGE!!!"
+###402465
+xxx: If you can't, but really want to, you'll get it in the neck.
+###402466
+vvv: how these politicians piss me off
+vvv: Moscow caught Washington's signal, Washington heard Moscow's signals....
+vvv: when will these dumbasses learn to use the phone?!
+###402467
+xxx: Grimaces of family life
+xxx: While courting, he romantically-mysteriously called me Bulgakov's Margarita...
+xxx: And now we live together, and he calls me Sancho Panza (
+###402468
+xxx: Talk to me, I'm bored
+yyy: hm
+yyy: *thinking about a conversation topic*
+yyy: choose: either the history of French impressionism or sexual perversions of the 18th century?
+xxx: Oh, what a choice...
+yyy: come on, think, and meanwhile I'll read the news from the tax office
+###402469
+The Kyrgyz authorities have been running a campaign since 2007 to promote the image of the republic as the birthplace of Santa Claus.
+###402470
+ххх: Andryush, you don't mind if I throw you a folder!!! it's heavy!!! then I'll write and you'll send it back to me
+yyy: why?)
+ххх: need to reinstall windows, and nowhere to dump it...
+yyy: and how much is a lot?
+ххх: 20-30 gigs... will you bear it???
+###402471
+Our systems programming teacher has two books proudly enthroned in a separate place on his shelf: D. Knuth, "The Art of Programming" and V. Pryanik, "Fundamentals of Algorithmization and Automata Design".
+###402472
+Iren: You know, I've always wanted to help the disadvantaged... For example starving children in Africa... But you need a bunch of different vaccinations there, so I'll go to the Alps!
+###402473
+xxx:
+My fourth wisdom tooth is coming in/
+
+ttt:
+you'll gain wisdom!
+
+xxx
+and for the full set a bonus — when I bite I'll deal fire damage.
+###402474
+<П.Е.Лоткин> GoldenLady: Careful — I'm all covered in erogenous zones. One wrong move and it'll be an orgy!
+<GoldenLady> П.Е.Лоткин: wow! and how do you ride a crowded bus?
+###402475
+xxx: I now feel like one of the 300 Spartans
+xxx: I know they'll fire me, but I keep working anyway
+###402476
+Sonat: were you beaten as a kid?
+Весна: mmmm.... yes )
+Sonat: NOT ENOUGH!
+###402477
+xxx: And yesterday I read the whole internet!!
+yyy: What?! How? You don't even have internet at home!
+xxx: No?
+xxx: ...and what did you dump onto my flash drive yesterday??
+###402478
+denver:
+Driving to work this morning through the narrow winding lanes around Kitay-gorod, one-way traffic, parked cars lined up on both sides. My eye catches from the faceless black-gray-mazda3-tinted mass a ZAZ-968M car, color — lettuce green with rust, across its entire rear window written in fashionable purple: "ANTI-GLAMOUR"
+And you say — downtown, snobs...
+###402479
+xxx: here, I think there's some inaccuracy in the name. by ear it's perceived too generally somehow.
+yyy: No-no, everything's right! JSC "ABS Rus", Cheboksary branch!
+###402480
+она: What are you doing?
+он: busy with business
+она: What kind?
+он: here the key word isn't "business", it's "busy"
+она: I see, busy with what?
+###402481
+<James> An erotic film — this genre, aimed mostly at men, has stable success. Films of this genre are aimed at arousing sexual excitement and erotic fantasies in the viewer.
+<Lans> no way. they're aimed at raising the rating on torrents
+###402482
+forum:
+Today on Echo of Moscow they said that fired programmers will be sent to public works, and that Medvedev supposedly signed such a decree.
+
+skvair:
+Now programmers will see what a garbage collector really is :-D
+###402483
+Кэш: my girl washed my jeans yesterday
+Кэш: with everything that was in them
+Кэш: now I'm treating everyone in the office to Ariel-flavored Orbit
+###402484
+xxx: and let the strongest win!
+yyy: and let the weakest endure...
+###402485
+Neil: I have a new fun now: I wash down programmer achievements with beer, and sign the cans with a marker for what was drunk
+###402486
+DMK: I'm hungry as an elephant
+trol: with your trunk?
+###402487
+zombie
+how are you?
+
+rNk
+great. only everything's pissing me off. this renovation, and the battery's leaking too. some dude with a suitcase came, trampled here in the hall, sat down by the battery, breathed fumes on me. Thought for a long time, said "Shitty!" and left
+###402488
+Lu.Sharova: do you ride anything wintery?
+Bf-109G2: emmm, badly — skates, awesomely — my ass )
+###402489
+xxx: What are you doing
+Airmage: working
+xxx: Do you know any website on the internet
+Airmage: eee, yes
+xxx: Which one
+Airmage: and what do you want to see on this website?
+xxx: Damn, music, pictures, download
+Airmage: to the phone?
+xxx: Yes
+Airmage: no, don't know
+xxx: Then why do you say yes
+###402490
+mKostya: bro need 50 wmz
+mKostya: urgently
+awa: sent
+mKostya: nothing came
+awa: it went the f*ck out of my ICQ
+###402491
+xxx: Washed my work mug and spoon with baking soda for the first time in half a year.
+xxx: Staring intently at the result of my labors, and the spoon isn't mine!
+###402492
+xxx: a girl on mamba writes:
+"It annoys me — dumb and stupid guys with no goal in life who live one day at a time and aren't confident in themselves."
+yyy: write her:
+"Hi... I'm very unsure of myself, since my only goal in life is to live one day at a time, today. Probably I'm dumb or stupid." :))
+###402493
+xxx: echo "Hi";
+yyy: select "Hi" from dual;
+xxx: switch($_GET["hi"])
+{
+case "how are you":
+echo "fine";
+break;
+case "what are you doing":
+echo "working";
+break;
+}
+yyy: SELECT CASE WHEN working=true THEN "and I'm sleeping, hehe" ELSE "I'm sleeping too";
+###402494
+xxx: Yesterday riding the bus, three students on the neighboring seats. Decent ones, not trash. One starts drawing with a finger on the fogged window: "F...". Thinking — damn, nothing to do..."FU...".
+ххх: Thinking — NOT ASS?!
+yyy: :-)
+xxx: "LIFE"
+yyy: Strange :-)
+xxx: Thinking — well damn, what intelligent youth nowadays?! Second line started: "F....". My heart unclenched =)
+xxx: Then he erases that "F" and pronounces: "Okay, let's not reveal the whole truth".
+###402495
+About the new edition of Art. 1273 of the Civil Code:
+
+xxx: I have 10 TB of porn downloaded, for how many tens of millennia will they jail me?
+yyy: they won't.
+yyy: it's all for parodies )
+###402496
+1: by the way Alexander the Great, the GREAT COMMANDER who raised a whole EMPIRE! was a homosexual!
+
+2: Not true. In his entire military career he didn't suffer a single defeat. It was his enemies, gloomily leaving the battlefield over their own corpses, who said through their teeth "What a ......ass!". That's where it came from.
+###402497
+xxx: What did you do today?
+ууу: Threw training grenades. Funny thing — the combat analog has a kill radius of 25 meters...
+ххх: Aand?
+ууу: Oh nothing... I just threw 23...
+###402498
+S****: what's going on in life?
+V****: there are unpleasant moments... (
+S****: And what kind of unpleasant moments in your life?
+V****: There are some faggots who don't honor their obligations...
+S****: There are such. And why do you rely on them?
+V****: I don't rely. I work for these faggots... (
+###402499
+xxx: Our folks joke here: "The management will give out vaselines for St. Valentine's Day"
+yyy: %) St. Vaseline's Day
+###402500
+xxx: Why are you so thoughtful today?
+yyy: My deputy just told me I'm shit. Before I could smear him on the wall, he quickly said: "If the boss isn't shit, then he's a shitty boss!".
+xxx: So I'm thinking..
+###402501
+jadv_step:
+My aunt works at a bank. And there everyone has to smile, demonstrating friendliness. But then suddenly a new internal regulation comes, according to which you don't need to smile anymore, just express friendliness with a general (!) facial expression. Turns out the bank management revised its policy after a complaint from one client who reported that the cashier "...smirked spitefully while handing me my tiny salary".
+###402502
+yyy: Somehow I don't really want to trust a site that has a headline: "Latest banking news"
+###402503
+- Mmm, I wouldn't recognize you without glasses! :)
+- Yeah, without glasses I recognize few people either
+###402504
+tUzIk: I'm afraid of Mashka now!
+/me: And what happened?
+tUzIk: Came to her today to give back notes. She's cooking in the kitchen. Imagine, standing there with an iron meat hammer. Tenderizing LIVER(!!!!!) and SMILING!
+###402505
+xxx:
+Yesterday standing with my girlfriend in the metro, waiting for the train, next to us a granny with a grandson (3-4 years old) stands and points at the rails.
+Asks the kid:
+-See? well over there. see? that's — WELDED JOINTS!
+###402506
+<xxx>: say, is fedora like a new red hat?
+<yyy>: dunno
+<yyy>: although no, I definitely remember, "Fedora's Woe" and "Little Red Riding Hood" are different fairy tales.
+###402507
+A client calls our company:
+they: We have a computer problem!
+we: How?
+they: The computer shuts down on "Solitaire"!
+we: Well the efficiency is increasing!
+they: Well you see — it's the CEO's computer, he's very upset!
+###402508
+Копытова: you know how well I drive!
+Копытова: I even envy myself sometimes
+Копытова: when I luck out...
+###402509
+write in PM > We have some activity in the bosses' aquarium. They're waving their hands, shouting, laughing and jumping.
+
+megafon> throw in some food, clean the compressor
+###402510
+A post on an anti-pickup site pleased me (quoting from memory):
+How to spot a pickup artist? If he unexpectedly approaches you and looks into your eyes, jokes, smiles during conversation — most likely, he's a pickup artist! If he's well dressed, behaves confidently and authoritatively — he's a pickup artist! If you feel good with him, as if you've known him for many years — he's definitely a pickup artist!!
+
+Comments:
+And if an unshaven uncombed schmuck in unwashed rags, pimply and in glasses, doesn't know what to talk about and looks at the floor approaches you — that's 100% a normal dude!!
+###402511
+I'll be free at 12, but that doesn't mean I'll be available.
+###402512
+ххх: work again at 9.00 tomorrow...
+ууу: how I understand you...
+ххх: no, you don't understand.
+ууу: I understand perfectly.
+ххх: you don't even have a job!
+ууу: I had one yesterday...
+###402513
+mehrunez: Don't ask her what a switch is. She'll say you're harassing her.
+mehrunez: She always does that when she doesn't understand what she's told.
+###402514
+xxx: Error messages are invented by rare geniuses
+xxx: "Surround SCM has encountered an error. Communication error."
+xxx: Bond, damn it. James Bond.
+###402515
+Когтевранка: sitting without jabber today at all?
+pofig: huh? what?
+pofig: don't ask such complex questions
+Когтевранка: okay, let's go with simple ones
+Когтевранка: how are you?
+pofig: fine
+Когтевранка: I'm trying to empirically evaluate the acceptable complexity of questions
+pofig: Your request has been automaticaly filtered due to evening filter rule. If you think that there was an error please contact server administrator.
+Когтевранка: system error
+###402516
+xxx: okay, need to clean the room... a girl's coming to visit me))
+yyy: throw everything under the bed and don't sweat it
+xxx: it's all occupied there
+xxx: for a long time already)
+###402517
+Roadrunner: which ninja turtle was your favorite as a kid? mine was Michelangelo :)
+Strogg: And mine was Donatello.
+Roadrunner: let me guess. you were just as smart?
+Strogg: No. It's just that in the village where I lived as a kid there were no nunchucks and sabers, only sticks :(
+###402518
+xxx: an auntie calls me in tech support with a question: like I have a profile overflow message
+xxx: I tell her: and you don't have heavy files on your desktop?
+xxx: she: no-no, what are you, I created folders on the desktop and hid all the files in them
+###402519
+xxx: I was thinking here, what if two telepaths start reading each other's minds simultaneously... Will they die of stack overflow?
+###402520
+Typing "Stephen King audiobooks" into Yandex, on one of the links I'm sitting in stupor: "Our audiobooks are a great way to tell your child a bedtime story and put them to bed"
+###402521
+xxx: Watching rugby on TV, thinking, what a game!
+xxx: They accelerate, collide, bang foreheads, fight, trip each other... I wonder what the IQ coefficient of these players is?
+ууу: It's written on their backs...
+###402522
+Astrological forecast of the 21st century:
+"Aries. Today is a bad day for googling. You won't find anything."
+###402523
+ОНА: Oh, I had the same backpack as you in childhood!
+ОН: What the f*ck are you trying to say, that I'm that far behind you in development??
+###402524
+From the Kinoforum:
+Slytherin: How I love this site! So many interesting thoughts from people, each substantiated and argued!
+Padonax: F*ck, the movie is SHIT!
+###402525
+xxx: listen, how can you tell if a person has an ear for music or not?
+yyy: if you can tell the sound of a falling spoon from the sound of a falling fork — then yes
+###402526
+from LJ:
+And an acquaintance of an acquaintance in Tokyo wanted to cash money at an ATM. Inserted the card, entered 200, got lots of condoms. Learn Japanese.
+###402527
+A real loser is when you passed the whole session except one subject, and on the last possible day of its retake you show up hungover, half an hour late, not even prepared, and by some dick they give you an excellent grade, and you scream with joy across the whole lecture hall: "F*CK YEAH!", and they expel you for immoral behavior during the exam... :(
+###402528
+From livejournal:
+A beautiful name "RosEuroBank".
+"FallenRubleBank" would sound less elegant.
+###402529
+xxx: Hi
+yyy: Hiii
+xxx: Damn. My grandma's bugging me. I installed ICQ for her (Grandpa's a diplomat, they have an advanced computer), so before she called and talked for half an hour about something, and I said "uh-huh" every minute, now she writes and writes, writes and writes, I'm so tired of writing "uh-huh"
+yyy: Poor thing
+xxx: Uh-huh
+###402530
+Spirtovozoff
+We won't see the space era until the word "parsec" turns from the abbreviation "a couple of seconds" back into a unit of distance...
+###402531
+stumbled on one forum:
+
+ibondВакуум: vacuum is matter with zero temperature, unlike other matter, whose temperature is never absolute zero.
+
+Gexagen: I.e., if we cool, say, a negro (he kindly agreed) to 0K, he'll turn into a vacuum?
+
+tac: You won't manage to cool to 0K — no one ever has, and it's fundamentally impossible, so your idealized vacuum doesn't exist. By the way, more interesting is the reverse process — if you heat a vacuum to 20C, a negro will appear
+###402532
+Today at the general meeting one of the managers burned:
+- I recently overheard a phrase: "90% of the company's employees are dissatisfied with the current situation". As a person from those 90%, I'd really like to see someone from the remaining 10%. Look at his happy face and ask what he's satisfied with.
+###402533
+korbdegree
+Turned on the anti-spam bot, wrote as the question:
+"Greetings from the Anti-spam bot! I've been insanely and furiously f*cked by offers to enlarge my dick, buy an iPhone for 50 rubles, watch "cool photos of students" and many others coming from spam robots. Prove you're a living RUSSIAN person. Answer a simple question: How much is ten times a hundred grams? (write the answer in letters)"
+
+What would you answer? And a person couldn't get through to me, even called, he wrote in response "kilogram" for a long time, in different variations with all possible mistakes
+###402534
+antilopaGnoo: and as a kid I got a registered letter from my cousin
+antilopaGnoo: such a thick one, they even made me pay for overweight...
+antilopaGnoo: so I open it hoping to see at least ten pages of handwritten text...and the envelope has just one page...
+antilopaGnoo: it says "check out the renovation we did in my room"
+antilopaGnoo: and a piece of wallpaper attached
+###402535
+Lanette
+Young man, have you been told you have a sick imagination?)
+
+Leanno
+no. Haven't I told you about the lord of the hemorrhoidal blue trolls yet?
+###402536
+A friend sent an SMS:
+Reading about the name Polina. The union is favorable with Anufry, Vissarion, Epiphanius, Isop, Naum, Paramon, Severyan, Philon and Kharlampy. If I name my daughter that, she'll die an old maid!!
+###402537
+13dead: all plastics in childhood were divided into three classes:
+— fast-burner
+— dripper
+— smoker
+###402538
+xxx: I was thinking...
+xxx: you know, into crackers, chips, etc. with black caviar flavor you can stuff ANY flavoring.
+xxx: what's the difference?
+xxx: anyway half the country has never tried black caviar and never will.
+###402539
+shatun: I made a communist sandwich!
+master: what's that like?
+shatun: everyone's equal in it: the sausage, the cheese, the bread, and the mayo!
+###402540
+Just read in the newspaper: "Lost documents in the name of Zhlob A.V. Reward guaranteed. 100% guaranteed."
+###402541
+Kerrigan: It was funny when a substation blew up near my house, windows blew out in the building (luckily I have double glazing, just shook), I said: "wait, something blew up here, AFK".
+And in 5 minutes: "everything's fine, something's burning, but we weren't hit, continuing the raid".
+That's when the whole guild was buzzing, like "oh, Russians"
+###402542
+VVV: VVAAA!!!!!!!!!!!!!!!!!!! Gena was just asked over the phone to determine what OS they have by the music that plays at boot!!!!!!
+VVV: and they didn't play it, they just said that it plays
+###402543
+A note about arrested pirates pleased me:
+"The Pyotr Veliky, from the Northern Fleet, is much larger than pirate boats and capable of carrying nuclear weapons." Probably took long comparing and analyzing.
+###402544
+xxx: opened a window at work, to air out the smoking and fumes
+xxx: and alcohol fumes are coming from outside
+xxx: impossible to work!
+###402545
+How philology students of years 4-5 bashfully lower their eyes and giggle nervously when asked to give examples for the methodology of Jungian hermeneutics... from Harry Potter. And they don't name examples no matter what, pretending they haven't read it. Yeah right! )
+Teacher:
+- Well, what example of a negatively acting "Shadow" in "Harry Potter"?
+Everyone's silent.
+Teacher:
+- Are you silent because you can't name the name of He-Who-Must-Not-Be-Named?
+###402546
+xxx: Idiot... Signed 3 valentines... In each I wrote, of course, to whom and from whom. Stuffed them into candies and sealed them. And how will I determine tomorrow which is for whom? :))
+###402547
+From a forum:
+I work at a uni. The only color printer of course is at my place (well I'm an engineer ;-) )
+A teacher (a granny-historian) comes, asks to print on the color printer, large, the wall newspaper title "Russia of Our Days". Asks to print in the colors of the Russian tricolor. When I said it couldn't be done, she started yelling and cursing...
+Okay, screw it, arguing costs more. Printed, on 3 sheets:
+"Russia" — in white.
+"Our" — in blue.
+"Days" — in red.
+The granny went to complain to the rector that I'm sabotaging the work, and brought him a blank sheet. I'll quit this job to hell...
+###402548
+wem: Epic fail. Wanted tea with a crouton — the toaster spat the crouton precisely into the cup of tea.
+###402549
+Она: and why does everyone take the cover off the computer...??
+Он: they don't take it off... they're just too lazy to put it back on :D
+###402550
+NeG@R:
+installed a plugin for the studio
+that analyzes code and suggests where to optimize
+
+NeG@R:
+this bastard highlighted the whole project as one big error
+###402551
+xxx:
+Competition between agencies isn't like in the movies, when they compete who's first to get the enemy's secret, while wiping each other out unrestrainedly.
+
+xxx:
+It's when your first girlfriend leaves for a precinct officer (he was a lieutenant, I remember), another girl — for a GRU officer, your wife — for an SBU officer (both unknown to me), and you yourself are a justice captain and assistant to the military prosecutor.
+###402552
+Izza
+Calling the cinema to ask about movies. Some auntie cuts into the conversation: "Len! They're showing the film upside down there! He loaded the film wrong again!"
+Izza
+the most joyful thing is "again!"
+PauL
+meaning it's kind of already a tradition
+###402553
+Pax: you did right to start furnishing the apartment with getting the internet
+Pax: first what's necessary for life — then conveniences
+###402554
+From the guitars.ru forum
+-------------------
+MAD
+"like from an 85-degree steam room into a snowbank with your bare ass?..."
+yeah, and hedgehogs winter there as a family!
+a buddy of mine jumped into a snowbank from the bathhouse so briskly that by the time I finished the phrase "mom grows rose bushes there", it was too late.
+and someone told a story when another buddy dove into a snowbank — and it turned out to be a pile of bricks covered with snow so you couldn't see them.
+
+in short, I'm for rubdowns!
+###402555
+у: Got a job?
+x: almost
+x: and you? )
+у: I'm meant only for love! work isn't for me!!! :)
+x: well go by your specialty
+###402556
+xxx: Overworked is when after the su command you type 3-4 characters of the password and press the [Tab] button, so you don't have to type the whole password.
+###402557
+Dem: The light in my toilet is glitching, turns on/off by itself. I go to the toilet like to the movies: you walk in, sit down, and the light goes out...
+###402558
+Дождик
+> ЛУЦ
+> Means you're loved
+>
+> ЛУЦ
+> And I'm not
+yeah, that's why they send me texts with text issued by google for the query "for valentine's day" and mailings to 130 contacts — with hearts and greetings. And not you.
+
+Дождик
+I think it's you who's loved, and not me
+###402559
+About Dulles's "Quote":
+
+A quote from Anatoly Ivanov's book "Eternal Call" (1983):
+
+— I'm explaining to you... In this century we won't win anymore. The current generation of people in Russia is too fanatical. To the point of frenzy. ... So we need to act another way. Remember, of course, your Lenin once said: we'll go another way. I read somewhere or heard in a movie... Well, good phrase. So we'll go another way. We'll tear out these spiritual roots of Bolshevism, vulgarize and destroy the main foundations of people's morality. We'll shake generation after generation like this, weather away this Leninist fanaticism. We'll take people from childhood, youth, we'll always bet on the youth, we'll decompose, corrupt, debauch them! ... — Yes, debauch! Corrupt! We'll make cynics, vulgarians, cosmopolitans out of them!
+
+In general, no need to invent nonsense, the USA had no such plan.
+###402560
+Reread the Strugatskys' early novellas (describes the future of the late 20th century), and also the criticism of those years (60s). There was one Yu. Gorbunov with an article "Is this how people of the future will speak?" and several like-minded people.
+-----
+Listen to how the novella's heroes speak: "- Don't yell at her, you goat! - barked the atmospheric physicist Potapov".
+"- If he wants to eat, he'll come".
+"Greguar is talking nonsense..."
+"They loved each other very much and jumped there to admire the stars..."
+"He has such a special mug".
+The heroes call each other "monsters", "idlers", "blind eagle-owls", "chatterboxes", "fry"...
+
+"Go to hell!", "Out! Loafers!", "Tavern! Bedlam!"
+-----
+If only Yu. Gorbunov knew that people of the future would speak "I'm a shrimp", "Kill yourself against the wall with a running start", "Drink poison", "Holy shit" and call each other "bitch-sons", "f*ck-rotors" and "whore-horseflesh"...
+###402561
+xxx: Bought a TV "in black piano color".
+xxx: Something tells me that in the original it was still "royal black"...
+###402562
+xxx: Actually I've been working since childhood too. At 9 I sold my drawings to grandpa for 50 rubles.

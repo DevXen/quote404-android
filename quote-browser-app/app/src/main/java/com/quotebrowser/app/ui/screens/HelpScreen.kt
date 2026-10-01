@@ -44,6 +44,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.88.36", listOf(
+            "My Databases: create as many of your own quote databases as you like — Settings → My Quotes card → \"My databases\", then tap + to name a new one. Each database gets the full add/edit/delete quote management, shows up in the database switcher, and is included in Random and Quote of the Day. Rename or delete a database from its ⋮ menu",
+            "Nick colors: the \"nick1 | nick2:\" compound speaker format (bash.org #448982 style, e.g. \"CwD | Asbestos: calculus is ...\") is now recognized — both nicks get their own colors and stay tappable, and the \"strip usernames\" copy/export option strips the whole \"nick1 | nick2:\" prefix"
+        )
+    ),
+    ChangelogEntry(
         "1.88.33", listOf(
             "The Quote404 logo now sits at the very top of every SMS Xtract theme card — the theme's own chrome (Windows 95 title bar, Sega stripes, Nokia band, mastheads) starts below it instead of above it, and the quote number moved to the top-right corner",
             "The 24 SMS Xtract themes were rebuilt to actually read as their themes: Sega gets its red/white/black stripes, 16-BIT BLAST PROCESSING tagline, and checkerboard versus frame; Windows 95 is a full window with raised 3D border, blue title bar, and status bar; Nokia has its blue band and phone-screen inset; Game Boy has the gray bezel, DOT MATRIX strip, and power LED — and the equivalent treatment for the rest",

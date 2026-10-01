@@ -294,6 +294,17 @@ private val PipeSpeakerRegex =
     Regex("(?m)^(?!(?i)(?:join|signoff)[ \\t]*\\|)([~&%+]?@?[${PipeNickChars}]{1,39})[ \\t]*\\|(?:[ \\t]|$)")
 
 /**
+ * Matches "nick1 | nick2:" compound speaker lines (bash.org #448982 style:
+ * "CwD | Asbestos: calculus is ..."). Group 1 is the first nick, group 2
+ * the second (the colon-side speaker). Line-start anchored like the other
+ * speaker formats so mid-line "a | b: c" prose never matches. The second
+ * nick follows the ColonSpeakerRegex shape (letter-start, up to two
+ * internal spaces).
+ */
+private val PipePairSpeakerRegex =
+    Regex("(?m)^([~&%+]?@?[$PipeNickChars]{1,39})[ \\t]*\\|[ \\t]*([A-Za-z][$NickChars]{0,28}(?: [$NickChars]{1,28}){0,2})\\s*:{1,2}[ \\t]")
+
+/**
  * IRC join/part/quit/topic notices without a leading "*":
  * "--- dave joined the chat room.", "---- sex has quit irc (Ping
  * timeout) ----", "--- Topic for #celebs-n-models is ...", irox
@@ -332,6 +343,11 @@ private fun speakerNamesIn(text: String): Set<String> {
     val names = mutableSetOf<String>()
     for (m in NickMentionRegex.findAll(text)) names += m.groupValues[2].lowercase()
     for (m in ColonSpeakerRegex.findAll(text)) names += m.groupValues[1].lowercase()
+    // v1.88.36: "nick1 | nick2:" compound speaker lines: both nicks are known.
+    for (m in PipePairSpeakerRegex.findAll(text)) {
+        names += m.groupValues[1].lowercase()
+        names += m.groupValues[2].lowercase()
+    }
     for (m in BracketSpeakerRegex.findAll(text)) names += m.groupValues[1].lowercase()
     for (regex in listOf(GtSpeakerRegex, CurlySpeakerRegex, DashSpeakerRegex, ParenSpeakerRegex, PipeSpeakerRegex))
         for (m in regex.findAll(text)) names += m.groupValues[1].lowercase()
@@ -373,6 +389,13 @@ private fun nickReplacements(displayText: String): List<NickRepl> {
     for (m in ColonSpeakerRegex.findAll(displayText)) {
         val g = m.groups[1] ?: continue
         repls += NickRepl(g.range.first, g.range.last + 1, g.value)
+    }
+    // v1.88.36: "nick1 | nick2:" compound speaker lines: redact both nicks.
+    for (m in PipePairSpeakerRegex.findAll(displayText)) {
+        for (gi in 1..2) {
+            val g = m.groups[gi] ?: continue
+            repls += NickRepl(g.range.first, g.range.last + 1, g.value)
+        }
     }
     for (m in BracketSpeakerRegex.findAll(displayText)) {
         val g = m.groups[1] ?: continue
@@ -478,6 +501,12 @@ private fun speakerMessageRanges(
         val g = m.groups[1] ?: continue
         emit(m, g.value, null)
     }
+    // v1.88.36: "nick1 | nick2:" compound speaker lines: the message
+    // belongs to the colon-side (second) nick.
+    for (m in PipePairSpeakerRegex.findAll(displayText)) {
+        val g2 = m.groups[2] ?: continue
+        emit(m, g2.value, null)
+    }
     for (regex in listOf(
         GtSpeakerRegex, CurlySpeakerRegex, DashSpeakerRegex,
         ParenSpeakerRegex, PipeSpeakerRegex
@@ -511,6 +540,7 @@ private fun lineHasSpeakerOrAction(
         || DashSpeakerRegex.containsMatchIn(line)
         || ParenSpeakerRegex.containsMatchIn(line)
         || PipeSpeakerRegex.containsMatchIn(line)
+        || PipePairSpeakerRegex.containsMatchIn(line)
         || ActionLineRegex.containsMatchIn(line)
         || PlusActionLineRegex.containsMatchIn(line)
         || NoticeLineRegex.containsMatchIn(line)
@@ -646,6 +676,11 @@ fun extractNicks(text: String): List<String> {
         if (hit != null) hits.add(m.range.first to hit.second)
     }
     for (m in ColonSpeakerRegex.findAll(text)) hits.add(m.range.first to m.groupValues[1])
+    // v1.88.36: "nick1 | nick2:" compound speaker lines: both nicks count.
+    for (m in PipePairSpeakerRegex.findAll(text)) {
+        hits.add(m.range.first to m.groupValues[1])
+        hits.add(m.range.first to m.groupValues[2])
+    }
     for (m in BracketSpeakerRegex.findAll(text)) hits.add(m.range.first to m.groupValues[1])
     for (regex in listOf(GtSpeakerRegex, CurlySpeakerRegex, DashSpeakerRegex, ParenSpeakerRegex, PipeSpeakerRegex))
         for (m in regex.findAll(text)) hits.add(m.range.first to m.groupValues[1])
@@ -1020,6 +1055,46 @@ fun rememberNickAnnotatedText(text: String, style: TextStyle): AnnotatedString {
                         displayText.substring(msgStart, msgEnd).isNotBlank()
                     ) {
                         addStyle(SpanStyle(color = nameColor), msgStart, msgEnd)
+                    }
+                }
+            }
+            // v1.88.36: "nick1 | nick2:" compound speaker lines (bash.org
+            // #448982): both nicks get their name color and stay tappable;
+            // the message takes the colon-side (second) nick's color.
+            for (m in PipePairSpeakerRegex.findAll(displayText)) {
+                var secondColor: Color? = null
+                for (gi in 1..2) {
+                    val nickGroup = m.groups[gi] ?: continue
+                    val nick = nickGroup.value
+                    val rule = ruleMap[nick.lowercase()]
+                    val nameColor = resolveRuleColor(
+                        rule?.nameHex,
+                        effNameDefault(nick)
+                    )
+                    if (gi == 2) secondColor = nameColor
+                    if (nameColor != null) {
+                        // Explicit range (see <nick> above): push/pop with
+                        // no append in between yields an empty annotation.
+                        addStringAnnotation(
+                            "nick", nick,
+                            nickGroup.range.first,
+                            nickGroup.range.last + 1
+                        )
+                        addStyle(
+                            SpanStyle(color = nameColor),
+                            nickGroup.range.first,
+                            nickGroup.range.last + 1
+                        )
+                    }
+                }
+                // Optional: the speaker's message text takes the name color.
+                if (palette.colorMessageWithSpeaker && secondColor != null) {
+                    val msgStart = m.range.last + 1
+                    val msgEnd = lineEndOf(displayText, msgStart)
+                    if (msgStart < msgEnd &&
+                        displayText.substring(msgStart, msgEnd).isNotBlank()
+                    ) {
+                        addStyle(SpanStyle(color = secondColor), msgStart, msgEnd)
                     }
                 }
             }
@@ -1454,6 +1529,36 @@ private fun collectQuoteSpans(
                     displayText.substring(msgStart, msgEnd).isNotBlank()
                 ) {
                     spans += KindSpan(msgStart, msgEnd, nameColor.toHtmlHex(), QuoteSpanKind.MESSAGE)
+                }
+            }
+        }
+    }
+    // v1.88.36: "nick1 | nick2:" compound speaker lines: both nicks get
+    // NAME spans; the message takes the colon-side (second) nick's color.
+    for (m in PipePairSpeakerRegex.findAll(displayText)) {
+        for (gi in 1..2) {
+            val nickGroup = m.groups[gi] ?: continue
+            val nick = nickGroup.value
+            val rule = ruleMap[nick.lowercase()]
+            val nameColor = resolveRuleColor(
+                rule?.nameHex,
+                effNameDefaultHtml(nick)
+            )
+            if (nameColor != null) {
+                spans += KindSpan(
+                    nickGroup.range.first,
+                    nickGroup.range.last + 1,
+                    nameColor.toHtmlHex()
+                , QuoteSpanKind.NAME)
+                // Optional: the speaker's message text takes the name color.
+                if (gi == 2 && palette.colorMessageWithSpeaker) {
+                    val msgStart = m.range.last + 1
+                    val msgEnd = lineEndOf(displayText, msgStart)
+                    if (msgStart < msgEnd &&
+                        displayText.substring(msgStart, msgEnd).isNotBlank()
+                    ) {
+                        spans += KindSpan(msgStart, msgEnd, nameColor.toHtmlHex(), QuoteSpanKind.MESSAGE)
+                    }
                 }
             }
         }

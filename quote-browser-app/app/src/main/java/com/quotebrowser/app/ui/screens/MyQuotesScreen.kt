@@ -65,7 +65,9 @@ fun MyQuotesScreen(
     vm: MyQuotesViewModel,
     onBack: () -> Unit,
     inboxText: String? = null,
-    onInboxTextConsumed: () -> Unit = {}
+    onInboxTextConsumed: () -> Unit = {},
+    // v1.88.36: reused for user-created databases — the heading follows the DB label.
+    title: String = "My Quotes"
 ) {
     val quotes by vm.quotes.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -148,7 +150,7 @@ fun MyQuotesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Quotes") },
+                title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -295,7 +297,9 @@ fun MyQuotesScreen(
             onSave = { text, rating, url, existing ->
                 scope.launch {
                     val dupes = vm.findDuplicates(text)
-                        .filter { it.dbId != com.quotebrowser.app.data.DatabaseManager.MY_QUOTES_ID ||
+                        // v1.88.36: exclude the quote being edited in THIS
+                        // database (vm.dbId), not just the built-in My Quotes.
+                        .filter { it.dbId != vm.dbId ||
                             it.number != existing?.number }
                     if (dupes.isEmpty()) {
                         if (existing == null) vm.addQuote(text, rating, url)

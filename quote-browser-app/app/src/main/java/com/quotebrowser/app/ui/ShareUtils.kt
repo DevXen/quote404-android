@@ -28,6 +28,8 @@ data class ShareOptions(
  *   (nick) message / (nick): message
  */
 private val nickPrefixPatterns = listOf(
+    // v1.88.36: "nick1 | nick2:" compound speaker prefix (bash.org #448982).
+    Regex("^[A-Za-z0-9_\\-\\[\\]{}^`|\\\\]{1,39}\\s*\\|\\s*[A-Za-z0-9_\\-\\[\\]{}^`|\\\\]{1,39}:\\s"),
     Regex("^<[^<>\\n]{1,48}>\\s?"),
     Regex("^\\([^()\\n]{1,32}\\)\\s*:?\\s?"),
     Regex("^[A-Za-z0-9_\\-\\[\\]{}^`|\\\\]{2,32}:\\s")

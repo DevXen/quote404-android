@@ -185,6 +185,7 @@ import com.quotebrowser.app.ui.screens.ExportScreen
 import com.quotebrowser.app.ui.screens.ExportFormat
 import com.quotebrowser.app.ui.screens.ExportScope
 import com.quotebrowser.app.ui.screens.MyQuotesScreen
+import com.quotebrowser.app.ui.screens.UserDatabasesScreen
 import com.quotebrowser.app.ui.screens.OcrImportScreen
 import com.quotebrowser.app.ui.screens.QotdHistoryScreen
 import com.quotebrowser.app.ui.screens.SearchScreen
@@ -282,7 +283,11 @@ private object Routes {
     // v1.53: ambient mode + dedicated On-this-day screen.
     const val AMBIENT = "ambient"
     const val ON_THIS_DAY = "on_this_day"
+    // v1.88.36: user-created databases ("My Databases").
+    const val USER_DBS = "user_dbs"
+    const val USER_DB_QUOTES = "userdb_quotes/{dbId}"
     fun detail(number: Int) = "detail/$number"
+    fun userDbQuotes(dbId: String) = "userdb_quotes/$dbId"
     /** Nick deep-dive route, e.g. from tapping a nick. */
     fun nickDetail(nick: String) = "nick/${Uri.encode(nick)}"
 }
@@ -1618,6 +1623,8 @@ fun AppNav(
                 SettingsScreen(
                     vm = mainVm,
                     onMyQuotesClick = { navController.navigate(Routes.MY_QUOTES) },
+                    // v1.88.36: user-created databases ("My Databases").
+                    onMyDatabasesClick = { navController.navigate(Routes.USER_DBS) },
                     onStatsClick = { navController.navigate(Routes.STATS) },
                     onDbOrderClick = { navController.navigate(Routes.DB_ORDER) },
                     onDuplicatesClick = { navController.navigate(Routes.DUPLICATES) },
@@ -2068,6 +2075,33 @@ fun AppNav(
                     onBack = { navController.popBackStack() },
                     inboxText = inboxText,
                     onInboxTextConsumed = { inboxText = null }
+                )
+            }
+            // v1.88.36: user-created databases ("My Databases").
+            composable(Routes.USER_DBS) {
+                UserDatabasesScreen(
+                    manager = manager,
+                    onOpenDb = { id, _ -> navController.navigate(Routes.userDbQuotes(id)) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = Routes.USER_DB_QUOTES,
+                arguments = listOf(navArgument("dbId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val dbId = backStackEntry.arguments?.getString("dbId") ?: return@composable
+                // Each user DB gets its own VM instance, keyed by dbId.
+                val vm: MyQuotesViewModel = viewModel(
+                    key = "userdb_$dbId",
+                    factory = vmFactory { MyQuotesViewModel(manager, dbId) }
+                )
+                val userDbs by manager.userDbs.collectAsStateWithLifecycle()
+                val label = userDbs.find { it.id == dbId }?.label
+                    ?: manager.shortLabel(dbId)
+                MyQuotesScreen(
+                    vm = vm,
+                    onBack = { navController.popBackStack() },
+                    title = label
                 )
             }
                 } // NavHost

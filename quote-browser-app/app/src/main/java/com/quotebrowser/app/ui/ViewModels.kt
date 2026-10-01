@@ -3455,10 +3455,15 @@ class HistoryViewModel(manager: DatabaseManager) : QuoteListViewModel(manager) {
 data class DuplicateHit(val dbId: String, val number: Int, val label: String)
 
 /** Manages the built-in "My Quotes" database: the user's own quotes. */
-class MyQuotesViewModel(private val manager: DatabaseManager) : ViewModel() {
+class MyQuotesViewModel(
+    private val manager: DatabaseManager,
+    // v1.88.36: generalized for user-created databases ("My Databases") —
+    // each user DB gets its own VM instance keyed by dbId.
+    val dbId: String = DatabaseManager.MY_QUOTES_ID
+) : ViewModel() {
 
     private val myRepo: QuoteRepository
-        get() = manager.repoFor(DatabaseManager.MY_QUOTES_ID)
+        get() = manager.repoFor(dbId)
 
     private val _tick = kotlinx.coroutines.flow.MutableStateFlow(0)
 

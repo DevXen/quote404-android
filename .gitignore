@@ -46,3 +46,9 @@ Thumbs.db
 *.jks
 *release*.keystore
 keystore-password.txt
+
+# Local build logs, verification scratch, and asset backups (never committed)
+build_logs_*.txt
+pkg_log_*.txt
+verify-*/
+asset-backups/

@@ -68,6 +68,17 @@ data class DbInfo(
 data class BasketEntry(val dbId: String, val number: Int)
 
 /**
+ * v1.88.36: a user-created quote database ("My Databases"). [id] is
+ * "user_<slug>" and the Room file lives at filesDir/databases/<id>.db,
+ * exactly like the built-in My Quotes database.
+ */
+data class UserDbInfo(
+    val id: String,
+    val label: String,
+    val createdAt: Long
+)
+
+/**
  * v1.53 report/flag: one user's flag on a quote — a preset reason, optional
  * free text, and when it was flagged. Stored on-device only.
  */
@@ -375,6 +386,8 @@ class DatabaseManager private constructor(private val appContext: Context) {
         private const val KEY_TTS_PER_NICK = "tts_per_nick_voices"
         // v1.86: one-time stamp for the Speaker-voices force-ON migration.
         private const val KEY_TTS_VOICES_V186_MIGRATED = "tts_voices_v186_migrated"
+        // v1.88.36: JSON registry of user-created databases ("My Databases").
+        private const val KEY_USER_DBS = "user_dbs_v1"
         private const val ASSET_DIR = "databases"
         private const val QOTD_WORK = "qotd_daily"
 
@@ -3766,6 +3779,93 @@ class DatabaseManager private constructor(private val appContext: Context) {
     fun setMyQuotesEnabled(enabled: Boolean) =
         setBoolPref(KEY_MY_QUOTES_FEATURE, _myQuotesFeature, enabled)
 
+    // v1.88.36: "My Databases" — user-created named databases, each a real
+    // Room file at filesDir/databases/<id>.db like the built-in My Quotes.
+    // Registry is a JSON array in SharedPreferences; corrupt JSON -> empty.
+    private fun loadUserDbs(): List<UserDbInfo> {
+        val raw = prefs.getString(KEY_USER_DBS, null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                val id = o.optString("id").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val label = o.optString("label").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                UserDbInfo(id = id, label = label, createdAt = o.optLong("createdAt", 0L))
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun saveUserDbs(list: List<UserDbInfo>) {
+        val arr = JSONArray()
+        for (info in list) {
+            arr.put(
+                JSONObject()
+                    .put("id", info.id)
+                    .put("label", info.label)
+                    .put("createdAt", info.createdAt)
+            )
+        }
+        prefs.edit().putString(KEY_USER_DBS, arr.toString()).apply()
+        _userDbs.value = list
+    }
+
+    private val _userDbs = MutableStateFlow(loadUserDbs())
+    val userDbs: StateFlow<List<UserDbInfo>> = _userDbs.asStateFlow()
+
+    /**
+     * Creates a new user database with the given label. The id is derived
+     * from the label ("user_" + slug); collisions get "_2", "_3", ... The
+     * id never equals [MY_QUOTES_ID]. Newest databases sort first.
+     */
+    fun createUserDb(label: String): UserDbInfo {
+        val cleanLabel = label.trim().ifEmpty { "My Database" }
+        var slug = cleanLabel.lowercase()
+            .replace(Regex("[^a-z0-9]+"), "_")
+            .trim('_')
+            .take(40)
+            .ifEmpty { "db" }
+        var id = "user_$slug"
+        var n = 2
+        val taken = _userDbs.value.map { it.id }.toMutableSet()
+        while (id in taken || id == MY_QUOTES_ID) {
+            id = "user_${slug}_$n"
+            n++
+        }
+        val info = UserDbInfo(id = id, label = cleanLabel, createdAt = System.currentTimeMillis())
+        saveUserDbs(listOf(info) + _userDbs.value)
+        return info
+    }
+
+    /** Renames a user database; no-op when the new label is blank. */
+    fun renameUserDb(id: String, label: String) {
+        val cleanLabel = label.trim()
+        if (cleanLabel.isEmpty()) return
+        val current = _userDbs.value
+        if (current.none { it.id == id }) return
+        saveUserDbs(current.map { if (it.id == id) it.copy(label = cleanLabel) else it })
+    }
+
+    /**
+     * Deletes a user database: evicts the cached Room instance, deletes the
+     * .db file (+wal/-shm), and drops it from the registry. Only ids
+     * starting with "user_" are accepted — the built-in My Quotes database
+     * can never be deleted this way.
+     */
+    fun deleteUserDb(id: String) {
+        if (!id.startsWith("user_")) return
+        evictQuoteDatabase(id)
+        val dbDir = File(appContext.filesDir, "databases")
+        for (suffix in listOf(".db", ".db-wal", ".db-shm")) {
+            try {
+                File(dbDir, "$id$suffix").delete()
+            } catch (_: Exception) {
+            }
+        }
+        saveUserDbs(_userDbs.value.filter { it.id != id })
+    }
+
     private val _perDbWidget = boolPref(KEY_PER_DB_WIDGET, true)
     val perDbWidgetEnabled: StateFlow<Boolean> = _perDbWidget.asStateFlow()
     fun setPerDbWidgetEnabled(enabled: Boolean) =
@@ -4000,7 +4100,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
         BUNDLED_LABEL_OVERRIDES[fileName]
             ?: prettifyLabel(fileName.removeSuffix(".db"))
 
-    /** All databases: bundled first, then My Quotes, then imported, then plugin quote packs. */
+    /** All databases: bundled first, then My Quotes, then user databases, then imported, then plugin quote packs. */
     fun availableDatabases(): Flow<List<DbInfo>> =
         combine(
             metaDb.metaDao().importedDbs(),
@@ -4009,13 +4109,17 @@ class DatabaseManager private constructor(private val appContext: Context) {
             myQuotesEnabled,
             // v1.83: plugin quote packs register as real databases; the
             // list re-emits when packs are installed/uninstalled/toggled.
-            PluginManager.plugins
-        ) { imported, myQuotesOn, _ ->
+            PluginManager.plugins,
+            // v1.88.36: user-created databases ("My Databases"); the list
+            // re-emits when databases are created/renamed/deleted.
+            userDbs
+        ) { imported, myQuotesOn, _, userDbInfos ->
             applyDbOrder(
                 bundledDbs() +
                     (if (myQuotesOn) {
                         listOf(DbInfo(id = MY_QUOTES_ID, label = MY_QUOTES_LABEL))
                     } else emptyList()) +
+                    userDbInfos.map { DbInfo(id = it.id, label = it.label) } +
                     imported.map { DbInfo(id = it.id, label = it.label) } +
                     PluginManager.quotePackDbInfos()
             )
@@ -4050,6 +4154,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
     /** Ids of every known database (used when random sources = "all"). */
     suspend fun allDbIds(): List<String> = withContext(Dispatchers.IO) {
         bundledDbs().map { it.id } + MY_QUOTES_ID +
+            userDbs.value.map { it.id } +
             metaDb.metaDao().importedDbsSync().map { it.id } +
             PluginManager.quotePackDbIds()
     }
@@ -4101,6 +4206,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
     fun shortLabel(id: String): String = when {
         id == MY_QUOTES_ID -> MY_QUOTES_LABEL
         id == ALL_DBS_ID -> ALL_DBS_LABEL
+        // v1.88.36: user-created databases carry their own label.
+        id.startsWith("user_") ->
+            userDbs.value.find { it.id == id }?.label ?: prettifyLabel(id)
         // v1.83: plugin quote packs carry their display name from the pack manifest.
         id.startsWith(PluginManager.DB_ID_PREFIX) ->
             PluginManager.dbLabel(id.removePrefix(PluginManager.DB_ID_PREFIX))

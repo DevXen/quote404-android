@@ -7,6 +7,33 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.88.36 — 2026-10-01 (versionCode 171)
+
+- **New nick format:** `nick1 | nick2:` compound speaker lines (bash.org
+  #448982 style, e.g. `CwD | Asbestos: calculus is ...`) are now recognized
+  everywhere nicks are: both names get their own nick colors and stay
+  tappable on cards, in the widget, and in exports; the message is attributed
+  to the colon-side speaker; quiz redaction and "strip usernames" (copy /
+  export) handle the new label too.
+- **My Databases:** new section (Settings → "My databases", next to
+  My Quotes) where any number of named personal databases can be created.
+  Each database gets full quote management — add, edit, delete, duplicate
+  checking, auto-tagging — plus rename/delete for the database itself. User
+  databases appear in the database picker, so Random, search, Quote of the
+  Day, and exports cover them like any bundled database.
+
+## v1.88.35 — 2026-10-01 (versionCode 170)
+
+- **Carriage-return / tofu-box fix:** 47 quotes in the bundled `qdb_us.db`
+  contain carriage returns (stored `\n\r\n` sequences). The widget/Compose
+  text pipeline passed raw `\r` through to Android's `TextView`, which
+  rendered each as a missing-glyph diamond. `cleanDisplayText()` now
+  normalizes `\r\n` → `\n` and lone `\r` → `\n` before display (display-only;
+  stored database text untouched).
+- Note: v1.88.35 shipped and was superseded by v1.88.36 within the hour; no
+  separate source snapshot was retained for it. Its signed APK is attached to
+  the v1.88.36 release below.
+
 ## v1.88.34 — 2026-09-29 (versionCode 169)
 
 Latest shipped version at archive time. (Per build notes, v1.88.33 was built

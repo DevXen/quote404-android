@@ -17,7 +17,7 @@ import com.quotebrowser.app.data.DisplayPrefs
  * Formats cataloged from a full audit of the 11 bundled databases:
  * - Speakers: `<nick>`, `< nick >`, `<@nick>`, `<nick|away>`, `nick:`,
  *   `nick :`, multi-word `Kalka Wrendi:`, `[nick]`, `[@nick]`, `[X]:`,
- *   `nick>`, `{nick}`, `-nick-`, `(@nick)`
+ *   `nick>`, `{nick}`, `-nick-`, `(@nick)`, `nick1 | nick2:`
  * - Mangled data: literal U+FFFD replacement chars from old scrapes are
  *   stripped at display time (stored text untouched)
  * - Actions/notices: `* nick does x`, `*wrapped*`, `** kicked`, `*** quit`
@@ -111,12 +111,18 @@ internal val TimestampRegex =
 // ---------------------------------------------------------------------------
 
 /**
- * The complete display-text pipeline: U+FFFD replacement characters from
- * old scrapes are stripped, then existing IRC `\` / dialogue breaks, then
- * QuoteClean `/` normalization (when enabled), then timestamp stripping
- * (unless the user chose to keep timestamps), and finally the "Break
- * between quotes" paragraph separation (v1.88.22: blank lines between
- * turns per the DisplayPrefs setting; Off leaves newlines untouched).
+ * The complete display-text pipeline: line endings are normalized first
+ * (v1.88.35: scraped quotes can carry \n\r\n / lone-\r sequences and
+ * Android's framework TextView — e.g. home-screen widgets fed via
+ * Html.fromHtml — renders a lone \r as a missing-glyph box instead of a
+ * line break; paragraphizeBody only normalized \r when "Break between
+ * quotes" wasn't Off), then U+FFFD replacement characters from old scrapes
+ * are stripped, then existing IRC `\` / dialogue breaks, then QuoteClean
+ * `/` normalization (when enabled), then timestamp stripping (unless the
+ * user chose to keep timestamps), and finally the "Break between quotes"
+ * paragraph separation (v1.88.22: blank lines between turns per the
+ * DisplayPrefs setting; Off leaves newlines untouched apart from the
+ * \r normalization, since \r is never legitimate visible content).
  */
 fun cleanDisplayText(
     text: String,
@@ -124,11 +130,19 @@ fun cleanDisplayText(
     dialogue: Boolean,
     opts: QuoteCleanOptions
 ): String {
-    var out = applyDisplayBreaks(stripReplacementChars(text), irc, dialogue)
+    var out = applyDisplayBreaks(stripReplacementChars(normalizeLineEndings(text)), irc, dialogue)
     if (opts.normalizeBreaks) out = normalizeSlashBreaks(out)
     if (!opts.showTimestamps) out = stripTimestamps(out)
     return paragraphizeBody(out)
 }
+
+/**
+ * Collapses \r\n and lone \r to \n. Display-only; stored text is never
+ * touched. (v1.88.35 fix for widget tofu diamonds on quotes with \n\r\n
+ * sequences in their stored text.)
+ */
+fun normalizeLineEndings(text: String): String =
+    text.replace("\r\n", "\n").replace('\r', '\n')
 
 /**
  * v1.88.22 "mind breaks": display-only paragraph separation between quote

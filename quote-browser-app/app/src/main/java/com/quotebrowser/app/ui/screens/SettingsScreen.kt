@@ -379,6 +379,8 @@ private fun PinnedRow(
 fun SettingsScreen(
     vm: MainViewModel,
     onMyQuotesClick: () -> Unit = {},
+    // v1.88.36: opens the user-created databases ("My Databases") screen.
+    onMyDatabasesClick: () -> Unit = {},
     onStatsClick: () -> Unit = {},
     onDbOrderClick: () -> Unit = {},
     onDuplicatesClick: () -> Unit = {},
@@ -2072,6 +2074,10 @@ fun SettingsScreen(
                                                             style = MaterialTheme.typography.bodyMedium,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
+                                                    }
+                                                    // v1.88.36: user-created databases.
+                                                    Button(onClick = onMyDatabasesClick) {
+                                                        Text("My databases")
                                                     }
                                                 }
                                             }

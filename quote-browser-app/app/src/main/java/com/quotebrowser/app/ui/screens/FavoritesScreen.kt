@@ -69,6 +69,7 @@ import com.quotebrowser.app.ui.shareCollection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @Composable
 fun FavoritesScreen(vm: FavoritesViewModel, manager: DatabaseManager, onQuoteClick: (Int) -> Unit,
@@ -353,7 +354,8 @@ fun FavoritesScreen(vm: FavoritesViewModel, manager: DatabaseManager, onQuoteCli
                 else "No favorites yet.\nTap the heart on any quote to save it here."
             )
         } else {
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 // v1.77: keyed by source db + number (numbers collide across
                 // databases); each card gets its true source dbId.
                 items(pinnedFirst, key = { "${it.dbId}:${it.quote.number}" }) { sq ->

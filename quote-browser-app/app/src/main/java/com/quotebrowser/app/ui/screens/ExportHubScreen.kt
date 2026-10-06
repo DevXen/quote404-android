@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Export hub: the export queue and the export-quotes screen in one place.
@@ -47,8 +48,8 @@ fun ExportHubScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-        ) {
+                .padding(padding),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 HubRow(
                     title = if (queueCount == 0) "Export tray"

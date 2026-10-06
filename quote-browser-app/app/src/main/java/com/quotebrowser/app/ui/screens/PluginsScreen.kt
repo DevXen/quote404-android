@@ -50,6 +50,7 @@ import com.quotebrowser.app.ui.components.ScreenHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * v1.83: the plugin framework UI. Lists every discovered pack (installed,
@@ -325,8 +326,8 @@ fun PluginsScreen(
                 .weight(1f)
                 .fillMaxWidth(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 Button(
                     onClick = { zipPicker.launch(arrayOf("application/zip", "*/*")) },

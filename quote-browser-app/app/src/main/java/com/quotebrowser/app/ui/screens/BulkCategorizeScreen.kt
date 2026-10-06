@@ -54,6 +54,7 @@ import com.quotebrowser.app.ui.BulkCategorizeViewModel
 import com.quotebrowser.app.ui.BulkResult
 import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.rememberNickAnnotatedText
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Search quotes across any combination of databases, checkbox-select the
@@ -177,8 +178,8 @@ fun BulkCategorizeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 item { Spacer(Modifier.height(4.dp)) }
                 items(results, key = { "${it.dbId}:${it.quote.number}" }) { result ->
                     BulkResultRow(
@@ -306,7 +307,8 @@ private fun AddToCategoriesDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp)
                     )
-                    LazyColumn(modifier = Modifier.height(240.dp)) {
+                    LazyColumn(modifier = Modifier.height(240.dp),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         items(names) { name ->
                             Row(
                                 modifier = Modifier

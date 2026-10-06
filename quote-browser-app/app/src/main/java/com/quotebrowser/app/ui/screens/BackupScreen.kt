@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Full backup & restore:
@@ -132,8 +133,8 @@ fun BackupScreen(
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 SettingsRowHeader(text = "Back up now")
             }
@@ -300,7 +301,8 @@ fun BackupScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(4.dp))
-                    LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                    LazyColumn(modifier = Modifier.weight(1f, fill = false),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         items(preview.entries) { entry ->
                             Text(
                                 entry,

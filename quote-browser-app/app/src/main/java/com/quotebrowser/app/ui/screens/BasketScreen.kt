@@ -51,6 +51,7 @@ import com.quotebrowser.app.ui.components.RatingBadge
 import com.quotebrowser.app.ui.components.SourceChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * The Export Tray: quotes staged from anywhere in the app for combined
@@ -104,8 +105,8 @@ fun BasketScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     itemsIndexed(
                         resolved,
                         key = { _, sq -> "${sq.dbId}:${sq.quote.number}" }

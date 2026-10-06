@@ -50,6 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private const val PAIRS = 6
 /** Best score is stored as SCORE_BASE - moves so GamePrefs' max-wins rule keeps the fewest moves. */
@@ -261,8 +262,8 @@ fun MemoryMatchGameScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         itemsIndexed(cards) { index, state ->
                             MemoryCard(
                                 state = state,

@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quotebrowser.app.ui.MainViewModel
 import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.ScreenHeader
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Muted nicks manager (under Content Filter): every quote containing a
@@ -83,8 +84,8 @@ fun MutedNicksScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 Text(
                     "Quotes containing any of these nicks are hidden everywhere " +

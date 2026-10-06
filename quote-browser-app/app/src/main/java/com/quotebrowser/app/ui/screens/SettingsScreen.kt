@@ -147,6 +147,7 @@ import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private const val FILE_PROVIDER_AUTHORITY = "com.quotebrowser.app.fileprovider"
 
@@ -733,8 +734,8 @@ fun SettingsScreen(
         state = listState,
         modifier = Modifier.weight(1f),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        flingBehavior = rememberCappedFlingBehavior()) {
         if (!anySectionVisible) {
             item(key = "row:nomatch") {
                 Text(
@@ -2732,8 +2733,8 @@ private fun FlaggedQuotesDialog(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.heightIn(max = 400.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         items(list, key = { "${it.dbId}/${it.quote.number}" }) { fq ->
                             Column {
                                 Row(
@@ -3050,8 +3051,8 @@ private fun BreakBetweenQuotesSetting(
             text = {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     items(DisplayPrefs.BREAK_OPTIONS) { value ->
                         val label = DisplayPrefs.BREAK_LABELS[value] ?: value
                         Row(

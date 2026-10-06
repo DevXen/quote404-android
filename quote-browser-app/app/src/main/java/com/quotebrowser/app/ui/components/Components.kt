@@ -238,6 +238,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import com.quotebrowser.app.ui.theme.LocalCompactMode
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * The #quote-number as a pill: the theme's "Quote number" color as the
@@ -4615,8 +4616,8 @@ fun PersonFilterButton(
                         }
                     } else {
                         LazyColumn(
-                            modifier = Modifier.height(320.dp)
-                        ) {
+                            modifier = Modifier.height(320.dp),
+                            flingBehavior = rememberCappedFlingBehavior()) {
                             items(shown, key = { it.nick.lowercase() }) { entry ->
                                 androidx.compose.material3.ListItem(
                                     headlineContent = { Text("<${entry.nick}>") },

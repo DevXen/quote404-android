@@ -38,6 +38,7 @@ import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.ScreenHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * v1.59: database verification / repair screen. A Run button executes
@@ -159,8 +160,8 @@ fun VerifyDatabasesScreen(
                 }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     item {
                         Column(
                             modifier = Modifier

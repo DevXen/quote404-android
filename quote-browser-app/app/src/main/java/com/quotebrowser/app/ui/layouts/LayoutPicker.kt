@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.quotebrowser.app.data.layouts.LayoutDef
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * v1.85: layout picker. Shows every available layout (bundled, plugin
@@ -58,8 +59,8 @@ fun LayoutPickerDialog(
                 )
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     if (defaultOptionLabel != null) {
                         item(key = "__default__") {
                             DefaultLayoutRow(

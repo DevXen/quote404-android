@@ -39,10 +39,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.quotebrowser.app.ui.components.ScreenHeader
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
+    ChangelogEntry(
+        "1.88.37", listOf(
+            "Scrolling fix: lists no longer teleport on an accidental fling — a speed ceiling now caps runaway flings from touch-sensor noise on lift-off, while deliberate fast flicks still scroll just as fast as before"
+        )
+    ),
     ChangelogEntry(
         "1.88.36", listOf(
             "My Databases: create as many of your own quote databases as you like — Settings → My Quotes card → \"My databases\", then tap + to name a new one. Each database gets the full add/edit/delete quote management, shows up in the database switcher, and is included in Random and Quote of the Day. Rename or delete a database from its ⋮ menu",
@@ -1102,8 +1108,8 @@ private val HELP_SECTIONS = listOf(
 fun HelpScreen() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        flingBehavior = rememberCappedFlingBehavior()) {
         item {
             ScreenHeader(title = "Help")
         }

@@ -28,6 +28,7 @@ import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.QuoteNumberBadge
 import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.components.SourceChip
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * All personal notes: note text plus a preview of the quote it belongs
@@ -45,7 +46,8 @@ fun NotesScreen(
         if (notes.isEmpty()) {
             EmptyState("No notes yet.\nOpen a quote's detail page to add one.")
         } else {
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 items(notes, key = { "${it.dbId}/${it.number}" }) { entry ->
                     Card(
                         modifier = Modifier

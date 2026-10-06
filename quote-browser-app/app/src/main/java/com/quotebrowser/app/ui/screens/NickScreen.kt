@@ -85,6 +85,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Deep-dive for one nick: quote count, average rating, per-database
@@ -149,8 +150,8 @@ fun NickScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-        ) {
+                .padding(padding),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 Card(
                     modifier = Modifier
@@ -455,8 +456,8 @@ fun NickLeaderboardScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-        ) {
+                .padding(padding),
+            flingBehavior = rememberCappedFlingBehavior()) {
             itemsIndexed(leaderboard, key = { _, e -> e.nick.lowercase() }) { index, entry ->
                 ListItem(
                     headlineContent = {

@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.quotebrowser.app.data.Category
 import com.quotebrowser.app.ui.hexToColorOrNull
 import com.quotebrowser.app.ui.theme.contentOn
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Category filter used on the quote list screens. Empty = all quotes.
@@ -260,8 +261,8 @@ fun CategoryEditDialog(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 320.dp)
-                ) {
+                        .heightIn(max = 320.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     items(allCategories, key = { it.id }) { cat ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

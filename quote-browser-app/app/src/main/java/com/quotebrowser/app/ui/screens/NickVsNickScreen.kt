@@ -50,6 +50,7 @@ import com.quotebrowser.app.ui.components.NickAvatar
 import com.quotebrowser.app.ui.components.LocalSingleDatabaseMode
 import com.quotebrowser.app.ui.components.QuoteRow
 import com.quotebrowser.app.ui.vmFactory
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Head-to-head nick comparison: pick two nicks and see quote counts,
@@ -129,8 +130,8 @@ fun NickVsNickScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item { Spacer(Modifier.height(4.dp)) }
             item {
                 Row(

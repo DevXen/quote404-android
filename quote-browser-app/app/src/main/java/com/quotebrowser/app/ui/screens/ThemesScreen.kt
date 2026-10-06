@@ -106,6 +106,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 
 @Composable
@@ -1499,8 +1500,8 @@ fun ThemesScreen(vm: MainViewModel) {
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
         item {
             SettingsSectionHeader(text = "Theme")
         }

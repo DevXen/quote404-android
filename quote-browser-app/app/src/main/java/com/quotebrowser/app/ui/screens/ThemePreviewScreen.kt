@@ -38,6 +38,7 @@ import com.quotebrowser.app.data.siteThemeFor
 import com.quotebrowser.app.ui.components.SiteThemeQuoteCard
 import com.quotebrowser.app.ui.rememberNickAnnotatedText
 import com.quotebrowser.app.ui.theme.scaledTextStyle
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Nav route for the v1.59 live theme preview screen. Registered by the
@@ -89,8 +90,8 @@ fun ThemePreviewScreen(manager: DatabaseManager, onBack: () -> Unit) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = padding,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 MockAppChrome(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }

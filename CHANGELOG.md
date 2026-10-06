@@ -7,6 +7,15 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.88.37 — 2026-10-06 (versionCode 172)
+
+- **Runaway-fling fix:** every scrolling list now caps fling velocity at
+  12,000 px/s before the platform fling animation runs. Touch-sensor noise
+  on finger lift-off could make the velocity tracker report 20,000+ px/s
+  from a near-stationary finger, teleporting the list up or down;
+  deliberate flicks live well under the ceiling, so fast scrolling still
+  feels fast. Applied to all 54 LazyColumn/LazyVerticalGrid call sites.
+
 ## v1.88.36 — 2026-10-01 (versionCode 171)
 
 - **New nick format:** `nick1 | nick2:` compound speaker lines (bash.org

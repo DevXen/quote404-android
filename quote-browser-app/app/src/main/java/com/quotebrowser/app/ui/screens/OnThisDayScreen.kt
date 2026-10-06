@@ -36,6 +36,7 @@ import com.quotebrowser.app.data.QuoteRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * v1.88.2 dedicated "On this day" screen, rewritten for honesty: "On this
@@ -128,8 +129,8 @@ fun OnThisDayScreen(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
-    ) {
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+        flingBehavior = rememberCappedFlingBehavior()) {
         item {
             Text(
                 text = "On this day — $today",

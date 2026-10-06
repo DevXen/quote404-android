@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * "Startup screen" settings row: the subtitle shows the current choice's
@@ -63,8 +64,8 @@ fun StartupScreenSettingRow(
             text = {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     items(options) { (key, label) ->
                         Row(
                             modifier = Modifier

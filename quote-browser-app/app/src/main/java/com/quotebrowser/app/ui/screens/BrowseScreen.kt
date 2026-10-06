@@ -114,6 +114,7 @@ import com.quotebrowser.app.ui.components.QuoteSelectionHost
 import com.quotebrowser.app.ui.components.SelectedQuote
 import com.quotebrowser.app.ui.components.rememberQuoteSelection
 import com.quotebrowser.app.ui.theme.scaledTextStyle
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @Composable
 fun BrowseScreen(
@@ -516,8 +517,8 @@ fun BrowseScreen(
             else -> {
                 LazyColumn(
                     Modifier.fillMaxSize(),
-                    state = listState
-                ) {
+                    state = listState,
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     items(itemCount) { index ->
                         val (quote, rowDbId) = itemAt(index) ?: return@items
                         val selKey = SelectedQuote(rowDbId, quote.number)

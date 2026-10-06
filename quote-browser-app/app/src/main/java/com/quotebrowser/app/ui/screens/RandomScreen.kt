@@ -119,6 +119,7 @@ import com.quotebrowser.app.ui.components.ShareOptionsDialog
 import com.quotebrowser.app.ui.components.dbAccentColor
 import com.quotebrowser.app.ui.components.rememberQuoteSelection
 import kotlin.math.sqrt
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
@@ -658,8 +659,8 @@ fun RandomScreen(
                     ) { list ->
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
+                            modifier = Modifier.fillMaxSize(),
+                            flingBehavior = rememberCappedFlingBehavior()) {
                             items(list, key = { "${it.dbId}:${it.quote.number}" }) { sq ->
                                 val selKey = SelectedQuote(sq.dbId, sq.quote.number)
                                 QuoteRow(

@@ -42,6 +42,7 @@ import com.quotebrowser.app.ui.cleanSpokenNick
 import com.quotebrowser.app.ui.components.NickVoicePicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private data class SpeakerRow(
     val nick: String,
@@ -126,8 +127,8 @@ fun SpeakerVoicesScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 Text(
                     "Give any speaker their own voice for read-aloud. " +

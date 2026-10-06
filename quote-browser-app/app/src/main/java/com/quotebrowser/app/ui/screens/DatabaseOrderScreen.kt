@@ -26,6 +26,7 @@ import com.quotebrowser.app.data.DatabaseManager
 import com.quotebrowser.app.ui.MainViewModel
 import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.ScreenHeader
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Arrange the order databases appear in the switcher and lists. "All
@@ -51,7 +52,8 @@ fun DatabaseOrderScreen(vm: MainViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 itemsIndexed(list, key = { _, db -> db.id }) { index, db ->
                     ListItem(
                         headlineContent = { Text(db.displayTitle()) },

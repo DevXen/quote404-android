@@ -53,6 +53,7 @@ import com.quotebrowser.app.ui.exportQuotesToUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @Composable
 fun HistoryScreen(vm: HistoryViewModel, manager: DatabaseManager, onQuoteClick: (Int) -> Unit,
@@ -150,7 +151,8 @@ fun HistoryScreen(vm: HistoryViewModel, manager: DatabaseManager, onQuoteClick: 
         if (historyItems.isEmpty()) {
             EmptyState("Nothing here yet.\nQuotes you open will appear in this list.")
         } else {
-            LazyColumn(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 // v1.77: keyed by source db + number (numbers collide across
                 // databases); each card gets its true source dbId.
                 items(historyItems, key = { "${it.dbId.ifEmpty { dbId }}:${it.quote.number}" }) { item ->

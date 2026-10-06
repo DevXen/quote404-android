@@ -58,6 +58,7 @@ import com.quotebrowser.app.ui.components.RatingBadge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -206,7 +207,8 @@ fun MyQuotesScreen(
             if (quotes.isEmpty()) {
                 EmptyState("Nothing here yet.\nTap + to add a quote you found.")
             } else {
-                LazyColumn(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.fillMaxSize(),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     items(quotes, key = { it.number }) { quote ->
                         MyQuoteRow(
                             quote = quote,

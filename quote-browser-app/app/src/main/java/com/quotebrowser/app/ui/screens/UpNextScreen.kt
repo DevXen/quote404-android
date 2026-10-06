@@ -45,6 +45,7 @@ import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.repoFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * "Up Next" queue: the user's ordered list of quotes to read next. Each
@@ -117,8 +118,8 @@ fun UpNextScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 items(
                     count = entries.size,
                     key = { i -> "${entries[i].first}/${entries[i].second}" }

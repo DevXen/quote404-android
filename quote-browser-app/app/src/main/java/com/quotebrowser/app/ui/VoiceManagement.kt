@@ -317,8 +317,8 @@ fun VoiceManageDialog(
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         if (rec.active.files.isNotEmpty()) {
                             item {
                                 VoiceGenerationCard(
@@ -632,8 +632,8 @@ fun VoiceRecordingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 Card(
                     colors = CardDefaults.cardColors(

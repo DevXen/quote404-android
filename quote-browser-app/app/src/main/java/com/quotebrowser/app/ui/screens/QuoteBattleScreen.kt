@@ -57,6 +57,7 @@ import com.quotebrowser.app.ui.theme.scaledTextStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Quote battle: two random quotes face off — tap the funnier one. The
@@ -290,8 +291,8 @@ private fun BattleRankings(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             itemsIndexed(rankings) { index, entry ->
                 Row(
                     modifier = Modifier

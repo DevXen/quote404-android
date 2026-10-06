@@ -80,6 +80,7 @@ import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.components.colorToHex
 import com.quotebrowser.app.ui.hexToColorOrNull
 import kotlinx.coroutines.launch
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Manage quote categories: add, rename, delete, and arrange.
@@ -456,8 +457,8 @@ fun CategoriesScreen(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             if (reorderMode || sections.isEmpty()) {
                 items(displayed, key = { it.id }) { cat -> CategoryRow(cat) }
             } else {

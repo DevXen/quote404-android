@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.quotebrowser.app.data.NamedSearch
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Rename/delete management for named saved searches.
@@ -79,8 +80,8 @@ fun ManageNamedSearchesDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(360.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         items(searches, key = { it.name }) { ns ->
                             if (editing == ns.name) {
                                 Row(

@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quotebrowser.app.ui.MainViewModel
 import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.ScreenHeader
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Dedicated blocked-words manager: the filter toggle, bulk paste
@@ -77,8 +78,8 @@ fun BlockedWordsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),

@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Games hub: every game in one place.
@@ -99,8 +100,8 @@ fun GamesScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-        ) {
+                .padding(padding),
+            flingBehavior = rememberCappedFlingBehavior()) {
             item {
                 GameRow(
                     title = "Daily Challenge",

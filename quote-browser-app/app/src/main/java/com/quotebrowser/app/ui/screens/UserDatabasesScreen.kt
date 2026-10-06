@@ -48,6 +48,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private val CreatedDateFormat = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
@@ -124,8 +125,8 @@ fun UserDatabasesScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     items(userDbs, key = { it.id }) { info ->
                         UserDbRow(
                             info = info,

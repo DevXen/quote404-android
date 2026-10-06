@@ -38,6 +38,7 @@ import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.components.SourceChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Quotes hidden via "Never show again". Each row can be restored
@@ -79,8 +80,8 @@ fun HiddenQuotesScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 items(entries, key = { "${it.dbId}/${it.quote.number}" }) { sq ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),

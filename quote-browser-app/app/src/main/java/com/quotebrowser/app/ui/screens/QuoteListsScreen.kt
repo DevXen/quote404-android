@@ -60,6 +60,7 @@ import com.quotebrowser.app.ui.components.QuoteNumberBadge
 import com.quotebrowser.app.ui.components.ScreenHeader
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * v1.66 "My Collections": named, reorderable, persistent quote lists.
@@ -128,8 +129,8 @@ fun QuoteListsScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     item { Spacer(Modifier.height(4.dp)) }
                     items(lists) { list ->
                         Card(
@@ -355,8 +356,8 @@ private fun QuoteListDetail(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     itemsIndexed(loaded, key = { _, sq -> "${sq.dbId}/${sq.quote.number}" }) { index, sq ->
                         Row(
                             modifier = Modifier
@@ -448,7 +449,8 @@ fun AddToListDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    LazyColumn(modifier = Modifier.height(240.dp)) {
+                    LazyColumn(modifier = Modifier.height(240.dp),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         items(lists) { list ->
                             val inList = list.id in containing
                             Row(

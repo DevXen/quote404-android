@@ -60,6 +60,7 @@ import com.quotebrowser.app.ui.components.QuoteRow
 import com.quotebrowser.app.ui.components.QuoteSelectionHost
 import com.quotebrowser.app.ui.components.SelectedQuote
 import com.quotebrowser.app.ui.components.rememberQuoteSelection
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @Composable
 fun TopBottomScreen(
@@ -231,8 +232,8 @@ fun TopBottomScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 if (isAll) {
                     items(allDbQuotes, key = { "${it.dbId}:${it.quote.number}" }) { sq ->
                         val selKey = SelectedQuote(sq.dbId, sq.quote.number)

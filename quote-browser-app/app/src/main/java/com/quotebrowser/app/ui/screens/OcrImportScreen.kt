@@ -48,6 +48,7 @@ import com.quotebrowser.app.ui.MyQuotesViewModel
 import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.ScreenHeader
 import kotlinx.coroutines.launch
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private sealed interface OcrState {
     data object Idle : OcrState
@@ -187,7 +188,8 @@ fun OcrImportScreen(
                             Text(if (allSelected) "Deselect all" else "Select all")
                         }
                     }
-                    LazyColumn(modifier = Modifier.weight(1f)) {
+                    LazyColumn(modifier = Modifier.weight(1f),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         items(blocks.size) { i ->
                             val checked = i in selected
                             Card(

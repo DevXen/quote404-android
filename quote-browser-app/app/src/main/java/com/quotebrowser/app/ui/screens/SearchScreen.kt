@@ -101,6 +101,7 @@ import com.quotebrowser.app.ui.components.QueryAutocomplete
 import com.quotebrowser.app.ui.components.VoiceSearchButton
 import com.quotebrowser.app.ui.components.SelectedQuote
 import com.quotebrowser.app.ui.components.rememberQuoteSelection
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -572,8 +573,8 @@ fun SearchScreen(vm: SearchViewModel, catVm: CategoryViewModel, manager: Databas
                 EmptyState(emptyMessage(vm.query, " in any database"))
             } else {
                 LazyColumn(
-                    Modifier.fillMaxSize()
-                ) {
+                    Modifier.fillMaxSize(),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     item {
                         Text(
                             "${allResults.size} results",
@@ -619,8 +620,8 @@ fun SearchScreen(vm: SearchViewModel, catVm: CategoryViewModel, manager: Databas
                 EmptyState(emptyMessage(vm.query))
             } else {
                 LazyColumn(
-                    Modifier.fillMaxSize()
-                ) {
+                    Modifier.fillMaxSize(),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     item {
                         Text(
                             "${noteResults.size} results",
@@ -669,8 +670,8 @@ fun SearchScreen(vm: SearchViewModel, catVm: CategoryViewModel, manager: Databas
                 }
                 else -> {
                     LazyColumn(
-                        Modifier.fillMaxSize()
-                    ) {
+                        Modifier.fillMaxSize(),
+                        flingBehavior = rememberCappedFlingBehavior()) {
                         item {
                             Text(
                                 "${pagingItems.itemCount} loaded",

@@ -63,6 +63,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /** Reading stats: per-database progress, total quotes seen, day streak. */
 @Composable
@@ -161,8 +162,8 @@ fun StatsScreen(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                 horizontal = 16.dp,
                 vertical = 8.dp
-            )
-        ) {
+            ),
+            flingBehavior = rememberCappedFlingBehavior()) {
             // v1.50: subtle banner while vacation mode is freezing streaks.
             if (vacationOn) {
                 item {

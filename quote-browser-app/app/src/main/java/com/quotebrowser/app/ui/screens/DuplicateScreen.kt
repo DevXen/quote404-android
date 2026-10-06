@@ -40,6 +40,7 @@ import com.quotebrowser.app.ui.components.QuoteNumberBadge
 import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.components.SourceChip
 import kotlinx.coroutines.launch
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Duplicate finder: scans every database for exact and near-duplicate
@@ -156,8 +157,8 @@ fun DuplicateScreen(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    flingBehavior = rememberCappedFlingBehavior()) {
                     item {
                         Button(
                             onClick = ::scan,

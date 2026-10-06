@@ -59,6 +59,7 @@ import com.quotebrowser.app.ui.theme.scaledTextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 private const val TOTAL_ROUNDS = 10
 private const val QUOTES_PER_ROUND = 4
@@ -242,8 +243,8 @@ fun SortByRatingGameScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            flingBehavior = rememberCappedFlingBehavior()) {
                             itemsIndexed(order, key = { _, sq ->
                                 "${sq.dbId}:${sq.quote.number}"
                             }) { index, sq ->

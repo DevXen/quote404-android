@@ -34,6 +34,7 @@ import com.quotebrowser.app.ui.components.ScreenHeader
 import com.quotebrowser.app.ui.components.SourceChip
 import com.quotebrowser.app.ui.rememberNickAnnotatedText
 import java.time.format.DateTimeFormatter
+import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 
 /**
  * Dedicated Quote of the Day history: every past daily pick (newest
@@ -73,8 +74,8 @@ fun QotdHistoryScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                flingBehavior = rememberCappedFlingBehavior()) {
                 items(history, key = { it.date.toString() + it.dbId }) { e ->
                     val annotated = rememberNickAnnotatedText(
                         e.quote.text,

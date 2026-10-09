@@ -422,7 +422,10 @@ class DatabaseManager private constructor(private val appContext: Context) {
             "wqdb_org.db" to "WQDB.org",
             "warpdrive_se.db" to "Warpdrive.se",
             "bash_im.db" to "bash.im",
-            "xkcdb_com.db" to "xkcdb.com"
+            "xkcdb_com.db" to "xkcdb.com",
+            // v1.88.39: Clint's personal Friends database (Jordyn & Tiffany
+            // banter) ships as a bundled asset so it's there on install.
+            "friends.db" to "Friends"
         )
 
         /**
@@ -476,7 +479,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
          * v1.88 = 12 (bash.im: new 81,497-quote Russian archive added;
          * English translations seed from the curated JSONL).
          */
-        private const val BUNDLED_DATA_REVISION = 14
+        private const val BUNDLED_DATA_REVISION = 15
 
         /**
          * v1.87: process-wide guard so the background bundled refresh

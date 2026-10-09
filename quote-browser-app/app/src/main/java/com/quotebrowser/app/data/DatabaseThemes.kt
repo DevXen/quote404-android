@@ -131,10 +131,12 @@ val DB_SITE_THEMES: Map<String, String> = mapOf(
     "asset:irox_com.db" to "db_irox",
     "asset:crapshack_quotes.db" to "db_crapshack",
     // v1.88.38: Clint's personal "Friends" database (Jordyn & Tiffany
-    // banter), imported with id "Friends". Like the bundled entries above,
-    // resolveDbTheme falls back to this when the per-db themeId is blank,
-    // so the Friends theme auto-applies on import.
-    "Friends" to "db_friends"
+    // banter). v1.88.39 also ships it as a bundled asset, so both the
+    // import id ("Friends") and the bundled id ("asset:friends.db") map
+    // here; resolveDbTheme falls back to this when the per-db themeId is
+    // blank, so the Friends theme auto-applies either way.
+    "Friends" to "db_friends",
+    "asset:friends.db" to "db_friends"
 )
 
 /** Theme ids that are database site themes (built-in, directly editable). */

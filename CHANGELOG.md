@@ -7,6 +7,15 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.88.39 — 2026-10-08 (versionCode 174)
+
+- **Friends database ships built-in:** `friends.db` (176 quotes — 145
+  Jordyn, 31 Tiffany, Jordyn/Tiffany categories, PG-13 maturity on the
+  racier ones) is now a bundled asset, so it appears in the database
+  picker on install with the Friends theme auto-applied — no import step.
+  Users who already imported Friends.db will see two entries and can
+  remove the imported copy.
+
 ## v1.88.38 — 2026-10-08 (versionCode 173)
 
 - **New "Friends" theme:** bespoke chat-bubble card presentation for

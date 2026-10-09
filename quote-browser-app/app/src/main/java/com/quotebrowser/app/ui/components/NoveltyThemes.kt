@@ -123,6 +123,8 @@ fun NoveltyThemeCard(
         SiteStyle.AIM -> AimCard(quote, showNumber, showRating, headerActions, modifier, stripNicks)
         SiteStyle.ICQ -> IcqCard(quote, showNumber, showRating, headerActions, modifier, stripNicks)
         SiteStyle.MSN_MESSENGER -> MsnCard(quote, showNumber, showRating, headerActions, modifier, stripNicks)
+        // v1.88.38: Clint's personal Friends database theme.
+        SiteStyle.FRIENDS -> FriendsCard(quote, showNumber, showRating, headerActions, modifier)
         else -> {
             // Unreachable: SiteQuoteCard only routes novelty styles here.
         }
@@ -1561,6 +1563,146 @@ private fun AimCard(
                     style = MaterialTheme.typography.labelSmall.copy(color = labelColor),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                 )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// FRIENDS — v1.88.38: Clint's personal database (Jordyn & Tiffany banter).
+// Sunset-hangout chat: deep plum card with an amber top strip, right-
+// aligned sunset-gradient bubbles for <Me>/<Clint>, left-aligned plum
+// bubbles with an amber nick label for everyone else, centered mauve
+// italic status lines for narration/action turns.
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun FriendsCard(
+    quote: Quote,
+    showNumber: Boolean,
+    showRating: Boolean,
+    headerActions: @Composable RowScope.() -> Unit,
+    modifier: Modifier
+) {
+    val turns = noveltyTurns(quote)
+    val cardBg = Color(0xFF241640)
+    val amber = Color(0xFFFFB020)
+    val pink = Color(0xFFFF4D8D)
+    val cream = Color(0xFFFFF6EC)
+    val mauve = Color(0xFFB9A8D9)
+    val incomingBubble = Color(0xFF3A2A5C)
+    val outgoingGradient = Brush.horizontalGradient(
+        colors = listOf(pink, Color(0xFFFF7A3D), amber)
+    )
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBg)
+    ) {
+        Column {
+            // Amber top accent strip.
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(amber)
+            )
+            Column(Modifier.padding(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    noveltyActionRow(tint = amber, headerActions = headerActions) {
+                        Text(
+                            text = if (showNumber) "✦ Friends · #${quote.number}"
+                            else "✦ Friends",
+                            style = noveltyPlainStyle(amber, 15).copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(noveltyBubbleSpacing())) {
+                    turns.forEach { turn ->
+                        val nick = noveltyTurnNick(turn)
+                        val isStatus = turn.trimStart().startsWith("*") || nick == null
+                        if (isStatus) {
+                            // Narration / action line: centered, muted mauve italic.
+                            val statusStyle = noveltyPlainStyle(mauve, 13).copy(
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                textAlign = TextAlign.Center
+                            )
+                            val annotated = rememberNickAnnotatedText(turn, statusStyle)
+                            Text(
+                                text = annotated,
+                                style = statusStyle,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            val body = noveltyStripNickPrefix(turn)
+                            val mine = nick.equals("me", ignoreCase = true) ||
+                                nick.equals("clint", ignoreCase = true)
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = if (mine) Arrangement.End
+                                else Arrangement.Start
+                            ) {
+                                if (mine) {
+                                    // Outgoing: sunset gradient bubble, white text.
+                                    CompositionLocalProvider(
+                                        LocalQuoteBackground provides Color(0xFFFF7A3D)
+                                    ) {
+                                        val annotated = rememberNickAnnotatedText(
+                                            body, noveltyPlainStyle(Color.White)
+                                        )
+                                        Text(
+                                            text = annotated,
+                                            style = noveltyPlainStyle(Color.White),
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.85f)
+                                                .clip(RoundedCornerShape(18.dp))
+                                                .background(outgoingGradient)
+                                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                } else {
+                                    // Incoming: amber nick label above a plum bubble.
+                                    Column(Modifier.fillMaxWidth(0.85f)) {
+                                        Text(
+                                            text = nick.orEmpty(),
+                                            style = noveltyPlainStyle(amber, 12).copy(
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        CompositionLocalProvider(
+                                            LocalQuoteBackground provides incomingBubble
+                                        ) {
+                                            val annotated = rememberNickAnnotatedText(
+                                                body, noveltyPlainStyle(cream)
+                                            )
+                                            Text(
+                                                text = annotated,
+                                                style = noveltyPlainStyle(cream),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(18.dp))
+                                                    .background(incomingBubble)
+                                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (showRating && quote.rating != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "${quote.rating}",
+                        style = MaterialTheme.typography.labelSmall.copy(color = mauve)
+                    )
+                }
             }
         }
     }

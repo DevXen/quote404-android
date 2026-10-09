@@ -260,6 +260,8 @@ fun siteBarColor(style: SiteStyle): Color = when (style) {
     SiteStyle.AIM -> Color(0xFF0058E6) // AIM title-bar blue
     SiteStyle.ICQ -> Color(0xFF4A9EDE) // ICQ light blue
     SiteStyle.MSN_MESSENGER -> Color(0xFF0B7DDA) // MSN blue
+    // v1.88.38: Friends deep plum.
+    SiteStyle.FRIENDS -> Color(0xFF1E1033)
     SiteStyle.MODERN_CARD -> Color.Transparent
 }
 
@@ -351,6 +353,8 @@ fun siteRatingLabel(style: SiteStyle, rating: Int?): String? {
         SiteStyle.AIM -> "$score"
         SiteStyle.ICQ -> "$score"
         SiteStyle.MSN_MESSENGER -> "$score"
+        // v1.88.38: Friends shows the plain score.
+        SiteStyle.FRIENDS -> "$score"
         SiteStyle.MODERN_CARD -> null
     }
 }
@@ -392,6 +396,8 @@ fun siteFullTitle(style: SiteStyle): String = when (style) {
     SiteStyle.AIM -> "AIM"
     SiteStyle.ICQ -> "ICQ"
     SiteStyle.MSN_MESSENGER -> "MSN Messenger"
+    // v1.88.38: Clint's personal Friends database.
+    SiteStyle.FRIENDS -> "Friends"
     SiteStyle.MODERN_CARD -> ""
 }
 
@@ -432,6 +438,8 @@ fun siteShortTitle(style: SiteStyle): String = when (style) {
     SiteStyle.AIM -> "AIM"
     SiteStyle.ICQ -> "ICQ"
     SiteStyle.MSN_MESSENGER -> "MSN Messenger"
+    // v1.88.38: Clint's personal Friends database (no TLD to hide).
+    SiteStyle.FRIENDS -> "Friends"
     SiteStyle.MODERN_CARD -> ""
 }
 
@@ -1946,7 +1954,9 @@ fun SiteQuoteCard(
             SiteStyle.GREEN_MONO, SiteStyle.ANSI, SiteStyle.ASCII,
             SiteStyle.MATRIX, SiteStyle.GREEN_TERM,
             SiteStyle.MESSENGER_LIGHT, SiteStyle.MESSENGER_DARK,
-            SiteStyle.AIM, SiteStyle.ICQ, SiteStyle.MSN_MESSENGER -> {
+            SiteStyle.AIM, SiteStyle.ICQ, SiteStyle.MSN_MESSENGER,
+            // v1.88.38: Clint's personal Friends database theme.
+            SiteStyle.FRIENDS -> {
                 NoveltyThemeCard(
                     style = style,
                     quote = quote,

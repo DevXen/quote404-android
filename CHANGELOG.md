@@ -7,6 +7,15 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.88.38 — 2026-10-08 (versionCode 173)
+
+- **New "Friends" theme:** bespoke chat-bubble card presentation for
+  Clint's personal Friends database (Jordyn & Tiffany banter). Sunset-
+  hangout palette — deep plum night, hot pink → orange → amber gradient
+  bubbles for his lines, warm purple bubbles with amber nick labels for
+  theirs, narration as centered status lines. Auto-applies to the imported
+  `Friends` database via DB_SITE_THEMES; also pickable in the theme list.
+
 ## v1.88.37 — 2026-10-06 (versionCode 172)
 
 - **Runaway-fling fix:** every scrolling list now caps fling velocity at

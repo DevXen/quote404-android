@@ -45,6 +45,11 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.88.38", listOf(
+            "New Friends theme: sunset chat bubbles on deep plum — your own sunset-gradient bubbles, amber nick labels for everyone else, auto-applied to the Friends database"
+        )
+    ),
+    ChangelogEntry(
         "1.88.37", listOf(
             "Scrolling fix: lists no longer teleport on an accidental fling — a speed ceiling now caps runaway flings from touch-sensor noise on lift-off, while deliberate fast flicks still scroll just as fast as before"
         )

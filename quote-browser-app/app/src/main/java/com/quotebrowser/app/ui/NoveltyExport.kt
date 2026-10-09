@@ -71,13 +71,15 @@ val NOVELTY_THEME_STYLES = listOf(
     SiteStyle.MESSENGER_DARK,
     SiteStyle.AIM,
     SiteStyle.ICQ,
-    SiteStyle.MSN_MESSENGER
+    SiteStyle.MSN_MESSENGER,
+    // v1.88.38: Clint's personal Friends database theme.
+    SiteStyle.FRIENDS
 )
 
 /** Tile-preview render width — square tiles, crisp at tile scale, cheap to compose. */
 const val NOVELTY_TILE_PREVIEW_W = 420
 
-/** True for the nineteen v1.88.23/v1.88.25/v1.88.27/v1.88.28 novelty styles (bespoke Compose cards). */
+/** True for the twenty v1.88.23/v1.88.25/v1.88.27/v1.88.28/v1.88.38 novelty styles (bespoke Compose cards). */
 fun SiteStyle.isNoveltyTheme(): Boolean = this in NOVELTY_THEME_STYLES
 
 /**
@@ -104,6 +106,8 @@ fun noveltyTileSwatch(style: SiteStyle): Triple<Long, Long, String> = when (styl
     SiteStyle.AIM -> Triple(0xFF1E4E79, 0xFFE60000, "Ag")
     SiteStyle.ICQ -> Triple(0xFFCDE8F7, 0xFF0066CC, "Ag")
     SiteStyle.MSN_MESSENGER -> Triple(0xFF0B7DDA, 0xFFFFFFFF, "Ag")
+    // v1.88.38: Friends — deep plum tile, hot pink glyph.
+    SiteStyle.FRIENDS -> Triple(0xFF1E1033, 0xFFFF4D8D, "✦")
     else -> Triple(0xFF222222, 0xFFFFFFFF, "Ag")
 }
 

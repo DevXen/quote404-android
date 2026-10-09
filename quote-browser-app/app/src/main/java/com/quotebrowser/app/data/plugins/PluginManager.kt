@@ -117,7 +117,9 @@ object PluginManager {
     private val KNOWN_STRUCTURES = setOf(
         "classic_qdb", "bashorg", "db_crapshack", "db_qdb_us", "db_qdb_mit",
         "db_quoteirc", "db_burntelectrons", "db_warpdrive", "db_wqdb",
-        "db_xkcdb", "db_furcqdb", "db_irox"
+        "db_xkcdb", "db_furcqdb", "db_irox",
+        // v1.88.38: Clint's personal Friends database theme.
+        "db_friends"
     )
 
     data class PluginManifest(

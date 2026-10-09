@@ -317,6 +317,8 @@ fun siteDisplayName(siteStyle: SiteStyle): String = when (siteStyle) {
     SiteStyle.AIM -> "AIM"
     SiteStyle.ICQ -> "ICQ"
     SiteStyle.MSN_MESSENGER -> "MSN Messenger"
+    // v1.88.38: Clint's personal Friends database.
+    SiteStyle.FRIENDS -> "Friends"
     SiteStyle.MODERN_CARD -> "Quote404"
 }
 

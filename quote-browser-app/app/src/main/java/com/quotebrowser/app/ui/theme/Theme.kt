@@ -414,6 +414,14 @@ val ThemePresets = listOf(
         onBackground = 0xFF9A9A9A, onSurface = 0xFF9A9A9A, number = 0xFF4AA3FF,
         quoteBackground = 0xFF141414
     ),
+    // v1.88.38: "Friends" — Clint's personal database of Jordyn & Tiffany
+    // banter. Sunset-hangout palette: deep plum night, hot pink + amber.
+    ThemePreset(
+        "db_friends", "Friends", true,
+        background = 0xFF1E1033, surface = 0xFF2A1846, primary = 0xFFFF4D8D,
+        onBackground = 0xFFFFF6EC, onSurface = 0xFFFFF6EC, number = 0xFFFFB020,
+        divider = 0xFF4A3568, quoteBackground = 0xFF2A1846
+    ),
     ThemePreset(
         "dark", "Dark", true,
         background = 0xFF121212, surface = 0xFF1E1E1E, primary = 0xFFBB86FC,
@@ -601,7 +609,7 @@ fun themeGroups(): List<ThemeGroup> {
         group("System", "theme_bsod", "theme_macintosh", "theme_macos"),
         group(
             "Quote databases", "db_bashim", "bashorg", "db_burntelectrons",
-            "db_crapshack", "db_furcqdb", "db_irox", "db_qdb_mit",
+            "db_crapshack", "db_friends", "db_furcqdb", "db_irox", "db_qdb_mit",
             "db_qdb_us", "db_quoteirc", "db_warpdrive", "db_wqdb", "db_xkcdb"
         ),
         group(

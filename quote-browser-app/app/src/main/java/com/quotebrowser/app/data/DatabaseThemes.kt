@@ -129,7 +129,12 @@ val DB_SITE_THEMES: Map<String, String> = mapOf(
     "asset:xkcdb_com.db" to "db_xkcdb",
     "asset:mandaliet_furcqdb.db" to "db_furcqdb",
     "asset:irox_com.db" to "db_irox",
-    "asset:crapshack_quotes.db" to "db_crapshack"
+    "asset:crapshack_quotes.db" to "db_crapshack",
+    // v1.88.38: Clint's personal "Friends" database (Jordyn & Tiffany
+    // banter), imported with id "Friends". Like the bundled entries above,
+    // resolveDbTheme falls back to this when the per-db themeId is blank,
+    // so the Friends theme auto-applies on import.
+    "Friends" to "db_friends"
 )
 
 /** Theme ids that are database site themes (built-in, directly editable). */
@@ -305,7 +310,9 @@ enum class SiteStyle {
     /** Orange header/footer bars, white bordered body, monospace. */
     BASH,
     /** Deep-blue header/footer bars, dark bordered body. */
-    CRAPSHACK
+    CRAPSHACK,
+    /** v1.88.38: Clint's Friends database — sunset chat bubbles on deep plum. */
+    FRIENDS
 }
 
 fun siteStyleFor(structureThemeId: String?): SiteStyle {
@@ -352,6 +359,8 @@ fun siteStyleFor(structureThemeId: String?): SiteStyle {
     "theme_aim" -> SiteStyle.AIM
     "theme_icq" -> SiteStyle.ICQ
     "theme_msn_messenger" -> SiteStyle.MSN_MESSENGER
+    // v1.88.38: Clint's personal Friends database theme.
+    "db_friends" -> SiteStyle.FRIENDS
     else -> SiteStyle.CLASSIC_QDB
     }
 }
@@ -370,6 +379,8 @@ fun siteStyleMonospace(style: SiteStyle): Boolean = when (style) {
     SiteStyle.GREEN_TERM -> true
     // v1.88.28 chat additions use proportional fonts (noveltyPlainStyle),
     // not monospace — so AIM, ICQ and MSN_MESSENGER are NOT in the true branch.
+    // v1.88.38: FRIENDS is a chat-bubble theme with proportional fonts too.
+    SiteStyle.FRIENDS -> false
     else -> false
 }
 

@@ -479,7 +479,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
          * v1.88 = 12 (bash.im: new 81,497-quote Russian archive added;
          * English translations seed from the curated JSONL).
          */
-        private const val BUNDLED_DATA_REVISION = 15
+        private const val BUNDLED_DATA_REVISION = 16
 
         /**
          * v1.87: process-wide guard so the background bundled refresh

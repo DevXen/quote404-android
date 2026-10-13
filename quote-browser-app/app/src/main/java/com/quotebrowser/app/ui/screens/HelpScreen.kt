@@ -45,6 +45,11 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.88.40", listOf(
+            "Friends database fix: conversations are now separated into individual chat bubbles — one bubble per person per turn — and Clint's own lines are labeled with his name instead of <Me>"
+        )
+    ),
+    ChangelogEntry(
         "1.88.39", listOf(
             "The Friends database now ships inside the app — no import needed. It appears in the database picker on its own with the Friends theme already applied. If you imported Friends.db earlier you'll see two entries; remove the imported copy from the database manager"
         )

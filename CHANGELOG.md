@@ -7,6 +7,19 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.88.40 — 2026-10-12 (versionCode 175)
+
+- **Friends conversations separated (Clint's Fold7 screenshots of #10/#112):**
+  the transcripts were stored as single lines with inline `<Nick>` markers,
+  so the Friends chat card rendered whole conversations as one bubble.
+  friends.db is now normalized — every turn on its own line (116 quotes),
+  Clint's turns labeled `<Clint>` instead of `<Me>` (resolved per post
+  author: in Jordyn/Tiffany-authored posts "Me" was the author), nick
+  variants unified (Jordyn Sommer → Jordyn, Tiff/TIFFany → Tiffany),
+  `*...*` stage directions as their own lines. The FriendsCard also splits
+  inline turns itself as a safety net for un-normalized copies.
+  BUNDLED_DATA_REVISION 15 → 16.
+
 ## v1.88.39 — 2026-10-08 (versionCode 174)
 
 - **Friends database ships built-in:** `friends.db` (176 quotes — 145

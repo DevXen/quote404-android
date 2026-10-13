@@ -1576,6 +1576,30 @@ private fun AimCard(
 // italic status lines for narration/action turns.
 // ---------------------------------------------------------------------------
 
+// Safety split for un-normalized Friends text: the normalized database
+// stores one turn per line, but older/imported copies can hold a whole
+// conversation on one line with inline <Nick> markers, which would render
+// mashed into a single bubble. These two regexes find the split points —
+// sentence-ending punctuation followed by an inline <Nick> marker, and a
+// slash separator followed by an inline <Nick> marker.
+private val friendsInlineTurnRegex1 =
+    Regex("""(?<=[.!?…])[ \t]+(?=<[A-Za-z][^<>\n]{0,31}>[ \t])""")
+private val friendsInlineTurnRegex2 =
+    Regex("""[ \t]*/[ \t]*(?=<[A-Za-z][^<>\n]{0,31}>[ \t])""")
+
+/** Friends turns: the usual newline turns, each further split at inline
+ *  <Nick> turn boundaries so one-line conversations still get one bubble
+ *  per speaker turn. */
+@Composable
+private fun friendsTurns(quote: Quote): List<String> =
+    noveltyTurns(quote).flatMap { turn ->
+        turn.replace(friendsInlineTurnRegex1, "\n")
+            .replace(friendsInlineTurnRegex2, "\n")
+            .split('\n')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+
 @Composable
 private fun FriendsCard(
     quote: Quote,
@@ -1584,7 +1608,7 @@ private fun FriendsCard(
     headerActions: @Composable RowScope.() -> Unit,
     modifier: Modifier
 ) {
-    val turns = noveltyTurns(quote)
+    val turns = friendsTurns(quote)
     val cardBg = Color(0xFF241640)
     val amber = Color(0xFFFFB020)
     val pink = Color(0xFFFF4D8D)

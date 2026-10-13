@@ -17,10 +17,14 @@ step "javac (R.java + Room generated)"
 mkdir -p $BUILD/classes
 CPJARS=$(ls $BUILD/cp/*.jar | tr '\n' ':')
 # classpath: our kotlin classes first, then deps, then android.jar
-"$JAVAC" -source 8 -target 8 -nowarn \
+"$JAVAC" -source 8 -target 8 -nowarn -encoding UTF-8 \
   -cp "$BUILD/classes:${CPJARS%:}:$PLATFORM" \
   -d "$BUILD/classes" \
   $(find $BUILD/gen $BUILD/kapt/sources -name "*.java" | sort) 2>&1 | grep -v "bootstrap\|deprecat" | head -20
+# v1.89.0 postmortem: without -encoding, javac falls back to the OS locale
+# charset and dies on UTF-8 chars in generated R.java — and the pipe above
+# used to swallow that failure, shipping a dex with NO R classes at all.
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "ERROR: javac failed — aborting package"; exit 1; fi
 echo "total classes: $(find $BUILD/classes -name '*.class' | wc -l)"
 
 step "d8 dex"

@@ -45,6 +45,11 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.1", listOf(
+            "Load .db files directly from the phone: Settings → Databases (and the first-run setup) has a \"Load a .db file\" button — pick a database file you've saved on the phone and, if its name matches one of the online databases, it installs as that database, no download needed (works offline too). Any other valid quote database is added as your own, just like importing before"
+        )
+    ),
+    ChangelogEntry(
         "1.89.0", listOf(
             "The quote databases are downloads now, not part of the app — the app itself is about 50 MB smaller. On first run you pick which databases to install; afterwards they check for updates on every startup and update themselves in the background. Manage them any time in Settings → Databases: install, update, re-download, or remove one (removing also removes the favorites and categories stored inside it)",
             "Your own databases live in the same place: Settings → Databases also covers My Databases, importing a chat or text file into a database you pick (or a brand-new one), and importing a .db file — everything personal is in the one screen"

@@ -86,6 +86,18 @@ data class CatalogEntry(
     val id: String get() = "asset:$file"
 }
 
+/** v1.89.1: outcome of loading a user-picked .db file from storage. */
+sealed class DbFileLoad {
+    /** The picked file's name matched a catalog database and the file
+     * was installed (or merged) as that catalog database. */
+    data class CatalogInstalled(val file: String, val label: String) :
+        DbFileLoad()
+
+    /** No catalog match — the file was added as a personal imported
+     * database (the long-standing import behavior). */
+    data class Imported(val info: DbInfo) : DbFileLoad()
+}
+
 /** One quote staged in the export queue: the database it came from plus its number. */
 data class BasketEntry(val dbId: String, val number: Int)
 
@@ -5210,6 +5222,138 @@ class DatabaseManager private constructor(private val appContext: Context) {
             }
         }
         return removed
+    }
+
+    /**
+     * v1.89.1: loads a .db file the user picked from storage.
+     *
+     * When the picked file's name matches a catalog database — matched
+     * against the parsed manifest catalog UNION the built-in
+     * label-override names, so matching works even when the manifest
+     * was never fetched (offline first run) — the file installs AS that
+     * catalog database: placed at the catalog device path when it isn't
+     * installed yet (with the usual pre-heal column checks), or merged
+     * into the device copy via [mergeDbFileIntoDevice] when it is —
+     * never a wholesale replace, since user category tables live in the
+     * device file. The revision stamp becomes the catalog revision when
+     * the file's quotes content hash matches the catalog entry's;
+     * otherwise it is stamped 0, so the normal startup update check
+     * later offers/applies the official edition (which also merges, so
+     * nothing loaded here is lost wholesale).
+     *
+     * Any other valid quote database falls back to [importDatabase]
+     * and lands as a personal imported database. Invalid files fail
+     * cleanly with a human-readable message. Progress reports the copy
+     * step as (bytes done, total bytes); the total is -1 when the
+     * provider doesn't report a size.
+     */
+    suspend fun loadDbFile(
+        uri: Uri,
+        onProgress: (bytesDone: Long, totalBytes: Long) -> Unit = { _, _ -> }
+    ): Result<DbFileLoad> = withContext(Dispatchers.IO) {
+        val displayName = queryDisplayName(uri)
+        val rawName = displayName
+            ?.substringAfterLast('/')?.trim().orEmpty()
+        val entries = catalogEntries()
+        val knownFiles =
+            (entries.map { it.file } + BUNDLED_LABEL_OVERRIDES.keys).distinct()
+        val matchedFile = knownFiles.firstOrNull { f ->
+            f.equals(rawName, ignoreCase = true) ||
+                (!rawName.endsWith(".db", ignoreCase = true) &&
+                    f.equals("$rawName.db", ignoreCase = true))
+        } ?: return@withContext importDatabase(displayName, uri)
+            .map { DbFileLoad.Imported(it) }
+        try {
+            synchronized(bundledDbLock(matchedFile)) {
+                val tmp = File.createTempFile(
+                    "db_load_", ".db", appContext.cacheDir
+                )
+                try {
+                    val totalBytes = try {
+                        appContext.contentResolver.query(
+                            uri, arrayOf(OpenableColumns.SIZE),
+                            null, null, null
+                        )?.use { c ->
+                            if (c.moveToFirst() && !c.isNull(0)) {
+                                c.getLong(0)
+                            } else {
+                                -1L
+                            }
+                        } ?: -1L
+                    } catch (e: Exception) {
+                        -1L
+                    }
+                    var copied = 0L
+                    appContext.contentResolver.openInputStream(uri)
+                        ?.use { input ->
+                            tmp.outputStream().use { output ->
+                                val buffer = ByteArray(64 * 1024)
+                                while (true) {
+                                    val read = input.read(buffer)
+                                    if (read < 0) break
+                                    output.write(buffer, 0, read)
+                                    copied += read
+                                    if (copied > MAX_DB_DOWNLOAD_BYTES) {
+                                        throw IllegalArgumentException(
+                                            "That file is too large to be " +
+                                                "a quote database."
+                                        )
+                                    }
+                                    onProgress(copied, totalBytes)
+                                }
+                            }
+                        } ?: return@withContext Result.failure(
+                        IllegalArgumentException(
+                            "Could not read the selected file."
+                        )
+                    )
+                    val problem = validateQuoteDb(tmp)
+                    if (problem != null) {
+                        return@withContext Result.failure(
+                            IllegalArgumentException(
+                                "That file isn't a valid quote " +
+                                    "database — $problem"
+                            )
+                        )
+                    }
+                    val contentHash = quotesContentSha256(tmp)
+                    val deviceFile = catalogDeviceFile(matchedFile)
+                    if (deviceFile.exists()) {
+                        mergeDbFileIntoDevice(matchedFile, tmp)
+                    } else {
+                        deviceFile.parentFile?.mkdirs()
+                        if (!tmp.renameTo(deviceFile)) {
+                            tmp.copyTo(deviceFile, overwrite = true)
+                            tmp.delete()
+                        }
+                        ensureImportedStatusColumn(deviceFile)
+                    }
+                    val entry = entries.firstOrNull { it.file == matchedFile }
+                    if (entry != null &&
+                        entry.contentSha256.isNotBlank() &&
+                        contentHash != null &&
+                        contentHash.equals(
+                            entry.contentSha256, ignoreCase = true
+                        )
+                    ) {
+                        setInstalledDbRevision(matchedFile, entry.revision)
+                    } else {
+                        setInstalledDbRevision(matchedFile, 0)
+                    }
+                    bumpCatalogChanged()
+                    Result.success(
+                        DbFileLoad.CatalogInstalled(
+                            matchedFile, catalogLabelFor(matchedFile)
+                        )
+                    )
+                } finally {
+                    tmp.delete()
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "loadDbFile failed for $rawName", e)
+            Result.failure(e)
+        }
     }
 
     /**

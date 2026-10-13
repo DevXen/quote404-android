@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quotebrowser.app.data.CatalogEntry
 import com.quotebrowser.app.data.DatabaseManager
+import com.quotebrowser.app.data.DbFileLoad
 import com.quotebrowser.app.ui.MyQuotesViewModel
 import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 import java.text.NumberFormat
@@ -185,23 +186,36 @@ fun DatabasesScreen(
         }
     }
 
-    // ---- "Your own databases": import a .db file (existing flow) ----
+    // ---- Load a .db file (v1.89.1): a file whose name matches a
+    // catalog database installs AS that database; any other valid
+    // quote database is imported as a personal database. Used by both
+    // the prominent button at the top and the "Your own databases" row.
+    var loadInProgress by remember { mutableStateOf(false) }
     val dbImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri != null) {
+        if (uri != null && !loadInProgress) {
+            loadInProgress = true
+            statusLine = null
             scope.launch {
-                val name = withContext(Dispatchers.IO) {
-                    manager.queryDisplayName(uri)
-                }
-                val result = manager.importDatabase(name, uri)
-                result.onSuccess { info ->
-                    manager.switchDatabase(info.id)
-                    statusLine =
-                        "Imported \"${info.label}\" and switched to it."
-                    refreshTick++
+                val result = manager.loadDbFile(uri)
+                loadInProgress = false
+                result.onSuccess { load ->
+                    when (load) {
+                        is DbFileLoad.CatalogInstalled -> {
+                            statusLine = "Installed as ${load.label}."
+                            refreshTick++
+                        }
+                        is DbFileLoad.Imported -> {
+                            manager.switchDatabase(load.info.id)
+                            statusLine =
+                                "Imported \"${load.info.label}\" as " +
+                                    "your own database and switched to it."
+                            refreshTick++
+                        }
+                    }
                 }.onFailure { e ->
-                    statusLine = "Import failed: ${e.message}"
+                    statusLine = e.message ?: "Couldn't load that file."
                 }
             }
         }
@@ -237,6 +251,38 @@ fun DatabasesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
+            }
+            item {
+                Column(Modifier.padding(horizontal = 16.dp)) {
+                    Button(
+                        onClick = {
+                            dbImportLauncher.launch(arrayOf("*/*"))
+                        },
+                        enabled = !loadInProgress,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (loadInProgress) {
+                                "Loading…"
+                            } else {
+                                "Load a .db file"
+                            }
+                        )
+                    }
+                    Text(
+                        "Already have a database file saved on this " +
+                            "phone? Load it directly — a file whose name " +
+                            "matches one of the online databases installs " +
+                            "as that database (works offline too); any " +
+                            "other quote database is added as your own.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (loadInProgress) {
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                }
             }
             statusLine?.let { line ->
                 item {
@@ -318,8 +364,9 @@ fun DatabasesScreen(
             item {
                 OwnDbRow(
                     title = "Import a .db file",
-                    subtitle = "Add a quote database file (.db) someone " +
-                        "shared with you",
+                    subtitle = "Same as Load a .db file above — a file " +
+                        "matching an online database installs as that " +
+                        "database, anything else is added as your own",
                     onClick = {
                         dbImportLauncher.launch(arrayOf("*/*"))
                     }

@@ -1,5 +1,7 @@
 package com.quotebrowser.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -40,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quotebrowser.app.data.CatalogEntry
 import com.quotebrowser.app.data.DatabaseManager
+import com.quotebrowser.app.data.DbFileLoad
 import com.quotebrowser.app.ui.rememberCappedFlingBehavior
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,6 +76,48 @@ fun DatabaseSetupScreen(
     val progress = remember { mutableStateMapOf<String, Float>() }
     val failures = remember { mutableStateMapOf<String, String>() }
     var installing by remember { mutableStateOf(false) }
+
+    // v1.89.1: load a .db file from this phone instead of downloading.
+    // A file matching a catalog database installs as that database —
+    // which also releases this setup gate.
+    var loadInProgress by remember { mutableStateOf(false) }
+    var loadMessage by remember { mutableStateOf<String?>(null) }
+    val dbLoadLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null && !loadInProgress) {
+            loadInProgress = true
+            loadMessage = null
+            scope.launch {
+                val result = manager.loadDbFile(uri)
+                loadInProgress = false
+                result.onSuccess { load ->
+                    when (load) {
+                        is DbFileLoad.CatalogInstalled -> {
+                            if (withContext(Dispatchers.IO) {
+                                    manager.installedCatalogFiles()
+                                        .isNotEmpty()
+                                }
+                            ) {
+                                onFinished()
+                            } else {
+                                loadMessage =
+                                    "Installed as ${load.label}."
+                            }
+                        }
+                        is DbFileLoad.Imported ->
+                            loadMessage =
+                                "Added \"${load.info.label}\" as your " +
+                                    "own database. You can also pick " +
+                                    "online databases here, or skip for " +
+                                    "now to start browsing."
+                    }
+                }.onFailure { e ->
+                    loadMessage = e.message ?: "Couldn't load that file."
+                }
+            }
+        }
+    }
 
     LaunchedEffect(fetchAttempt) {
         loading = true
@@ -169,6 +214,32 @@ fun DatabaseSetupScreen(
                     ) {
                         Text("I have my own chat files / databases")
                     }
+                    TextButton(
+                        onClick = {
+                            dbLoadLauncher.launch(arrayOf("*/*"))
+                        },
+                        enabled = !installing && !loadInProgress,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (loadInProgress) {
+                                "Loading file…"
+                            } else {
+                                "Load a .db file"
+                            }
+                        )
+                    }
+                    if (loadInProgress) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                    loadMessage?.let { msg ->
+                        Text(
+                            msg,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
             }
         }
@@ -218,6 +289,30 @@ fun DatabaseSetupScreen(
                         }
                         TextButton(onClick = onOpenOwnDatabases) {
                             Text("I have my own chat files / databases")
+                        }
+                        TextButton(
+                            onClick = {
+                                dbLoadLauncher.launch(arrayOf("*/*"))
+                            },
+                            enabled = !loadInProgress
+                        ) {
+                            Text(
+                                if (loadInProgress) {
+                                    "Loading file…"
+                                } else {
+                                    "Load a .db file"
+                                }
+                            )
+                        }
+                        if (loadInProgress) {
+                            CircularProgressIndicator()
+                        }
+                        loadMessage?.let { msg ->
+                            Text(
+                                msg,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }

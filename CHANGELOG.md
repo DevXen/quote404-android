@@ -7,7 +7,32 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
-## v1.89.0 — 2026-10-13 (versionCode 176)
+## v1.89.1 — 2026-10-13 (versionCode 177)
+
+- **Load .db files directly (Clint):** Settings → Databases and the
+  first-run picker now have "Load a .db file". A file whose name matches
+  an online database (e.g. a bash_im.db copied from a PC) installs AS
+  that database — works fully offline; if it's already installed the
+  file merges in (user category tables preserved). A file matching the
+  official copy exactly is stamped current; a different build installs
+  too and the startup check can refresh it later. Any other valid quote
+  database is added as your own, like an import.
+- **Fixes the v1.89.0 launch crash:** that build's dex contained no R
+  classes at all (NoClassDefFoundError androidx/work/R$bool at startup).
+  Root cause: package.sh ran javac over the generated R sources with no
+  -encoding flag — under a non-UTF-8 locale javac failed on UTF-8
+  characters and the failure was swallowed by a pipe, so packaging
+  continued without the R classes. package.sh now passes
+  `-encoding UTF-8` and aborts if javac fails; releases are additionally
+  verified by a dex inventory (R-class definition count matches the
+  v1.88.40 baseline exactly: 1,776).
+
+## v1.89.0 — 2026-10-13 (versionCode 176) — SHIPPED BROKEN, superseded same day by v1.89.1
+
+> The v1.89.0 APK crashed at launch on device (missing R classes — see
+> v1.89.1 above). The feature work below is real and carried into
+> v1.89.1; don't install the v1.89.0 APK.
+
 
 - **Databases are now downloads, not bundled (Clint):** the 13 quote
   databases no longer ship inside the APK. They are hosted as assets on

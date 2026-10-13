@@ -7,6 +7,30 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.0 — 2026-10-13 (versionCode 176)
+
+- **Databases are now downloads, not bundled (Clint):** the 13 quote
+  databases no longer ship inside the APK. They are hosted as assets on
+  this repo's `databases` release with a manifest.json (revision, sha256,
+  content hash, size, quote count, label, date per database).
+  - First run shows a picker: choose which databases to install, with
+    sizes and quote counts; "Skip for now" is allowed.
+  - Every startup checks installed databases against the manifest and
+    silently downloads + merges updates (user category tables live inside
+    the .db files, so updates always merge, never replace).
+  - Settings → Databases: install, update, re-download, or uninstall any
+    database; uninstalling the current one switches away first.
+  - New databases need only a file + manifest entry on the release — no
+    app update (the catalog is fully manifest-driven).
+  - Upgrades keep everything: on-device database files stay in place and
+    are adopted via a content-hash check (SHA-256 over number/rating/
+    text/url), so nothing re-downloads unless its content changed.
+  - Your own databases live in the same screen: create your own, import
+    your own chat/text files into them, or import a .db file.
+  - The .db sources moved in-repo from app assets to `databases/` (still
+    the upload source for the release). APK is ~53MB smaller (50.8MB).
+  - The repo is now public so the app can download anonymously.
+
 ## v1.88.40 — 2026-10-12 (versionCode 175)
 
 - **Friends conversations separated (Clint's Fold7 screenshots of #10/#112):**

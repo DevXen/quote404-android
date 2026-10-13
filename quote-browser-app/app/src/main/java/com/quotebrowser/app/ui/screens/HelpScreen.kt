@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.0", listOf(
+            "The quote databases are downloads now, not part of the app — the app itself is about 50 MB smaller. On first run you pick which databases to install; afterwards they check for updates on every startup and update themselves in the background. Manage them any time in Settings → Databases: install, update, re-download, or remove one (removing also removes the favorites and categories stored inside it)",
+            "Your own databases live in the same place: Settings → Databases also covers My Databases, importing a chat or text file into a database you pick (or a brand-new one), and importing a .db file — everything personal is in the one screen"
+        )
+    ),
+    ChangelogEntry(
         "1.88.40", listOf(
             "Friends database fix: conversations are now separated into individual chat bubbles — one bubble per person per turn — and Clint's own lines are labeled with his name instead of <Me>"
         )

@@ -382,6 +382,8 @@ fun SettingsScreen(
     onMyQuotesClick: () -> Unit = {},
     // v1.88.36: opens the user-created databases ("My Databases") screen.
     onMyDatabasesClick: () -> Unit = {},
+    // v1.89: opens the downloadable-databases manager screen.
+    onDatabasesClick: () -> Unit = {},
     onStatsClick: () -> Unit = {},
     onDbOrderClick: () -> Unit = {},
     onDuplicatesClick: () -> Unit = {},
@@ -2225,6 +2227,25 @@ fun SettingsScreen(
                                                 )
                                             ) {
                                                 Column(Modifier.padding(8.dp)) {
+                                                    // v1.89: the databases are downloads
+                                                    // now — install, update, re-download,
+                                                    // or remove them, and manage your own
+                                                    // databases / chat-file imports here.
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            "Databases",
+                                                            style = MaterialTheme.typography.titleSmall,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                        Button(onClick = onDatabasesClick) {
+                                                            Text("Manage")
+                                                        }
+                                                    }
                                                     // v1.55: "Show collection dates" removed — dates no
                                                     // longer appear in the switcher (see the per-database
                                                     // info panel instead).

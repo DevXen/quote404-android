@@ -64,6 +64,28 @@ data class DbInfo(
     fun displayTitle(showDates: Boolean = false): String = label
 }
 
+/**
+ * v1.89: one downloadable database from the online catalog (the manifest
+ * published with the GitHub "databases" release). The catalog is fully
+ * manifest-driven — new databases appear by adding a file + manifest
+ * entry, no app change needed. Ids stay "asset:<file>" so themes,
+ * favorites, and per-database settings keep matching.
+ */
+data class CatalogEntry(
+    val file: String,
+    val label: String,
+    val date: String?,
+    val count: Long,
+    val size: Long,
+    val revision: Int,
+    val sha256: String,
+    val contentSha256: String,
+    /** Absolute URL the .db downloads from (manifest-relative resolved). */
+    val downloadUrl: String
+) {
+    val id: String get() = "asset:$file"
+}
+
 /** One quote staged in the export queue: the database it came from plus its number. */
 data class BasketEntry(val dbId: String, val number: Int)
 
@@ -98,11 +120,14 @@ data class FlaggedSourcedQuote(
 )
 
 /**
- * Owns the set of available quote databases (bundled assets + user imports),
- * the currently selected one, and the cached Room instances.
+ * Owns the set of available quote databases (downloaded catalog DBs +
+ * user imports), the currently selected one, and the cached Room
+ * instances.
  *
- * Bundled databases are discovered at runtime from the assets/databases/ folder, so
- * dropping another .db into that folder is enough to add it — no code changes.
+ * v1.89: catalog databases are discovered from the online manifest (see
+ * [CatalogEntry]); dropping a new .db + manifest entry into the
+ * "databases" release is enough to add one — no code changes. Before
+ * v1.89 they were discovered in the APK's assets/databases/ folder.
  *
  * v1.88.19: application-scoped singleton — the constructor is private and
  * every entry point (QuoteApp, workers, widget providers, broadcast
@@ -388,7 +413,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
         private const val KEY_TTS_VOICES_V186_MIGRATED = "tts_voices_v186_migrated"
         // v1.88.36: JSON registry of user-created databases ("My Databases").
         private const val KEY_USER_DBS = "user_dbs_v1"
-        private const val ASSET_DIR = "databases"
+        /** v1.89: ASSET_DIR removed — no databases ship in assets anymore. */
         private const val QOTD_WORK = "qotd_daily"
 
         /** Id of the built-in database holding quotes the user adds themselves. */
@@ -535,9 +560,31 @@ class DatabaseManager private constructor(private val appContext: Context) {
         /** v1.60: per-file revision stamps for applied download updates. */
         private const val KEY_DB_UPDATE_REV = "db_update_rev_"
 
+        /**
+         * v1.89: the databases no longer ship inside the APK — they are
+         * downloaded from the public GitHub "databases" release. This is
+         * the default manifest URL; a stored override (Settings → Database
+         * updates) wins when non-blank.
+         */
+        const val DEFAULT_DB_MANIFEST_URL =
+            "https://github.com/DevXen/quote404-android/releases/download/" +
+                "databases/manifest.json"
+
+        /** v1.89: raw manifest JSON cached in prefs so the catalog (and
+         * the setup / manager screens) work offline. */
+        private const val KEY_DB_CATALOG_CACHE = "db_catalog_cache_v1"
+
+        /** v1.89: one-time stamp for the bundled→downloaded migration. */
+        private const val KEY_DL_MIGRATION_DONE = "dl_migration_v1_done"
+
+        /** v1.89: user tapped "Skip for now" on the first-run DB setup. */
+        private const val KEY_DB_SETUP_SKIPPED = "db_setup_skipped"
+
         /** v1.60: caps for the update manifest / database downloads. */
         private const val MAX_MANIFEST_BYTES = 256 * 1024
-        private const val MAX_DB_DOWNLOAD_BYTES = 150L * 1024 * 1024
+        /** v1.89: raised from 150MB — a single catalog database download
+         * (bash.im is ~57MB today) plus future growth must fit. */
+        private const val MAX_DB_DOWNLOAD_BYTES = 250L * 1024 * 1024
 
         /** "bash_org" -> "Bash Org", "qdb_us" -> "Qdb Us". */
         fun prettifyLabel(raw: String): String =
@@ -740,6 +787,11 @@ class DatabaseManager private constructor(private val appContext: Context) {
     }
 
     init {
+        // v1.89: the "bundled refresh" below is now the downloadable-DB
+        // startup pass (migration + silent auto-update of installed
+        // catalog databases) — no assets ship in the APK anymore. The
+        // schema heal still runs first on the same thread, over the
+        // on-device files that exist.
         // v1.87: bundled-database refresh now runs on a background thread.
         // It used to run synchronously here, blocking the first frame on
         // every upgraded install (worse with each revision bump). Old data
@@ -806,6 +858,15 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 // and the first queries settle before it runs, and run it
                 // at minimum thread priority so scrolling stays smooth
                 // while it grinds in the background.
+                //
+                // v1.89: the asset refresh is GONE — the databases are
+                // downloads now. This pass instead runs the one-time
+                // bundled→downloaded migration (content-hash match stamps
+                // revisions for databases an upgraded install already has)
+                // and then the silent auto-update for installed catalog
+                // databases. Same thread, same delay, same priority: the
+                // app is fully usable on the on-device copies meanwhile,
+                // and nothing here ever installs a new database.
                 try {
                     Thread.currentThread().priority = Thread.MIN_PRIORITY
                     Thread.sleep(20000)
@@ -813,9 +874,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     Log.w("QuoteBrowser", "bundled refresh delay interrupted", t)
                 }
                 try {
-                    refreshBundledDatabases()
+                    runDownloadableStartupPass()
                 } catch (t: Throwable) {
-                    Log.w("QuoteBrowser", "bundled refresh failed", t)
+                    Log.w("QuoteBrowser", "downloadable-db startup pass failed", t)
                 } finally {
                     try {
                         Thread.currentThread().priority = Thread.NORM_PRIORITY
@@ -916,14 +977,16 @@ class DatabaseManager private constructor(private val appContext: Context) {
 
     /**
      * The single database used by screens that cannot render the merged
-     * "all" view: Bash.org when it's bundled, otherwise the first bundled
-     * database in default order.
+     * "all" view: Bash.org when it's installed, otherwise the first
+     * installed catalog database in default order. v1.89: with nothing
+     * installed, falls back to My Quotes (always available) instead of a
+     * dangling asset id.
      */
     fun firstBundledDbId(): String {
         val bundled = bundledDbs().map { it.id }
         return bundled.firstOrNull { it == "asset:bash_org.db" }
             ?: bundled.firstOrNull()
-            ?: "asset:bash_org.db"
+            ?: MY_QUOTES_ID
     }
 
     /** Maps the virtual "all" id to a real database for single-DB screens. */
@@ -3999,21 +4062,28 @@ class DatabaseManager private constructor(private val appContext: Context) {
     private val inFlightBundledOpens = mutableMapOf<String, kotlinx.coroutines.CompletableDeferred<QuoteDatabase>>()
     private val inFlightOpensLock = Any()
 
-    /** Bundled databases found in the assets/databases/ folder. */
+    /**
+     * v1.89: catalog databases currently INSTALLED on-device. Before
+     * v1.89 these were discovered in the APK's assets/databases/ folder;
+     * now "installed" = the downloaded file exists in the app's database
+     * directory. Ids, labels, and dates come from the catalog when it's
+     * been fetched (built-in overrides as fallback), so every caller's
+     * semantics are unchanged — uninstalled databases simply aren't
+     * offered anywhere.
+     */
     fun bundledDbs(): List<DbInfo> {
-        val files = try {
-            appContext.assets.list(ASSET_DIR)
-        } catch (e: Exception) {
-            emptyArray()
-        } ?: emptyArray()
-        return files
-            .filter { it.endsWith(".db", ignoreCase = true) }
+        val entries = catalogEntries().associateBy { it.file }
+        return knownCatalogFiles()
+            .filter { isCatalogDbInstalled(it) }
             .sorted()
-            .map {
+            .map { file ->
+                val entry = entries[file]
                 DbInfo(
-                    id = "asset:$it",
-                    label = bundledLabel(it),
-                    date = BUNDLED_DB_DATES[it]
+                    id = "asset:$file",
+                    label = entry?.label?.takeIf { it.isNotBlank() }
+                        ?: bundledLabel(file),
+                    date = entry?.date?.takeIf { it.isNotBlank() }
+                        ?: BUNDLED_DB_DATES[file]
                 )
             }
     }
@@ -4103,6 +4173,17 @@ class DatabaseManager private constructor(private val appContext: Context) {
         BUNDLED_LABEL_OVERRIDES[fileName]
             ?: prettifyLabel(fileName.removeSuffix(".db"))
 
+    /**
+     * v1.89: bumped whenever a catalog database is installed, updated, or
+     * uninstalled, so [availableDatabases] re-emits (file appearance on
+     * disk is not itself a flow event).
+     */
+    private val _catalogChanged = MutableStateFlow(0)
+
+    private fun bumpCatalogChanged() {
+        _catalogChanged.value += 1
+    }
+
     /** All databases: bundled first, then My Quotes, then user databases, then imported, then plugin quote packs. */
     fun availableDatabases(): Flow<List<DbInfo>> =
         combine(
@@ -4115,8 +4196,11 @@ class DatabaseManager private constructor(private val appContext: Context) {
             PluginManager.plugins,
             // v1.88.36: user-created databases ("My Databases"); the list
             // re-emits when databases are created/renamed/deleted.
-            userDbs
-        ) { imported, myQuotesOn, _, userDbInfos ->
+            userDbs,
+            // v1.89: catalog installs/uninstalls change which bundled
+            // databases exist on disk.
+            _catalogChanged
+        ) { imported, myQuotesOn, _, userDbInfos, _ ->
             applyDbOrder(
                 bundledDbs() +
                     (if (myQuotesOn) {
@@ -4716,64 +4800,11 @@ class DatabaseManager private constructor(private val appContext: Context) {
     fun isMaturityAllowed(q: Quote): Boolean =
         maturityCeiling.value.matches(q.maturity, q.spicy)
 
-    /**
-     * v1.56 bundled-database refresh. For every bundled asset whose stored
-     * revision is older than [BUNDLED_DATA_REVISION], merges the current
-     * asset's quote rows into the on-device copy (Room's createFromAsset()
-     * only copies on first install, so upgrades would otherwise keep stale
-     * data). The merge is done with raw SQLite, never by replacing the
-     * file, so the user's category tables (categories, quote_categories,
-     * category_settings, category_auto_rules) in the same file are
-     * preserved. Favorites, history, personal ratings, and notes live in
-     * MetaDatabase/SharedPreferences and are untouched.
-     *
-     * Per file: ensure the `status` column exists, then — whenever the
-     * asset carries the status column and its data fingerprint differs
-     * from the on-device file's (count plus checksums over number, text,
-     * url, rating, and queued-status, so text/rating/URL/status-only
-     * refreshes are all caught) — ATTACH the asset and INSERT OR REPLACE
-     * every quote row. The file's own quotes_ai/ad/au
-     * triggers keep the FTS index in sync; FTS tables are never touched
-     * directly. The old v1.50.x gate (asset user_version > device
-     * user_version) is gone: it let devices whose file already reported
-     * version 2 stamp the revision without merging, leaving stale data
-     * (qdb.us stuck at 13,813 quotes) forever. Files that don't exist
-     * on-device are skipped (fresh installs get the asset verbatim via
-     * createFromAsset). Idempotent: the merge never deletes on-device
-     * rows, and the revision stamp is written only after the merge
-     * validates (every asset row represented on-device with identical
-     * columns, and the post-merge count covers every asset row).
-     *
-     * v1.87: runs on a background thread (started from init) — never
-     * call on the main thread.
-     */
-    private fun refreshBundledDatabases() {
-        val files = try {
-            appContext.assets.list(ASSET_DIR)
-        } catch (e: Exception) {
-            Log.w("QuoteBrowser", "bundled refresh: cannot list assets", e)
-            return
-        } ?: return
-        for (name in files.filter { it.endsWith(".db", ignoreCase = true) }.sorted()) {
-            val revKey = KEY_BUNDLED_DATA_REV + name
-            if (prefs.getInt(revKey, 0) >= BUNDLED_DATA_REVISION) continue
-            // v1.88.16 diagnostics: is the deferred merge doing heavy
-            // work during slow launches?
-            com.quotebrowser.app.StartupWatchdog.mark("bundled refresh merge start: $name")
-            val mergeT0 = android.os.SystemClock.elapsedRealtime()
-            try {
-                refreshOneBundledDatabase(name)
-            } catch (e: Exception) {
-                Log.w("QuoteBrowser", "bundled refresh failed for $name", e)
-                com.quotebrowser.app.StartupWatchdog.mark("bundled refresh merge FAILED: $name")
-                continue // no stamp: retry on next launch
-            }
-            com.quotebrowser.app.StartupWatchdog.mark(
-                "bundled refresh merge end: $name (${android.os.SystemClock.elapsedRealtime() - mergeT0}ms)"
-            )
-            prefs.edit().putInt(revKey, BUNDLED_DATA_REVISION).apply()
-        }
-    }
+    // v1.89: refreshBundledDatabases() (the v1.56 asset merge pass)
+    // was removed with the bundled assets — downloaded catalog
+    // databases now update through runDownloadableStartupPass() and
+    // mergeDbFileIntoDevice below.
+
 
     /**
      * Data fingerprint of a quotes table: count plus checksums over the
@@ -4828,11 +4859,16 @@ class DatabaseManager private constructor(private val appContext: Context) {
     // v1.60: download-based database updates.
     //
     // Bundled quote data otherwise only changes when a new APK ships. This
-    // lets the app pull newer .db files from a manifest URL the user
-    // configures (Settings → Your data): downloads are SHA-256 verified
-    // and merged with the same raw-SQLite machinery as the bundled
-    // refresh, so categories, favorites, and user data are preserved.
-    // Until the user sets a URL, the feature is dormant.
+    // lets the app pull newer .db files from a manifest URL: downloads are
+    // SHA-256 verified and merged with the raw-SQLite merge machinery, so
+    // categories, favorites, and user data are preserved.
+    //
+    // v1.89: the databases no longer ship in the APK at all. The catalog
+    // (manifest) is the single source of truth for which databases exist;
+    // the default URL is the public GitHub "databases" release, and a
+    // stored override still wins when the user sets one. Installed =
+    // the on-device bundled_<file> exists. The manifest JSON is cached
+    // in prefs so the catalog works offline.
     // ------------------------------------------------------------------
 
     /** v1.60: per-database outcome of an update check. */
@@ -4846,122 +4882,490 @@ class DatabaseManager private constructor(private val appContext: Context) {
         enum class UpdateStatus { UP_TO_DATE, UPDATED, FAILED }
     }
 
-    fun getDbUpdateUrl(): String = prefs.getString(KEY_DB_UPDATE_URL, "").orEmpty()
+    /**
+     * v1.89: the effective manifest URL — the stored override when the
+     * user set one (and it's non-blank), else the built-in default (the
+     * public GitHub "databases" release).
+     */
+    fun getDbUpdateUrl(): String {
+        val stored = prefs.getString(KEY_DB_UPDATE_URL, "").orEmpty().trim()
+        return stored.ifEmpty { DEFAULT_DB_MANIFEST_URL }
+    }
 
     fun setDbUpdateUrl(url: String) {
         prefs.edit().putString(KEY_DB_UPDATE_URL, url.trim()).apply()
     }
 
+    // ------------------------------------------------------------------
+    // v1.89: the downloadable-database catalog.
+    // ------------------------------------------------------------------
+
+    /** File names known before any manifest has been fetched — used
+     * only to detect installed databases on an upgraded device while
+     * offline (labels/dates then come from the built-in overrides). The
+     * catalog itself is fully manifest-driven; this list is a fallback,
+     * never the source of truth for what's offered for download. */
+    private val FALLBACK_CATALOG_FILES = listOf(
+        "bash_im.db", "bash_org.db", "burntelectrons_org.db",
+        "crapshack_quotes.db", "friends.db", "irox_com.db",
+        "mandaliet_furcqdb.db", "qdb_mit_edu.db", "qdb_us.db",
+        "quoteirc_com.db", "warpdrive_se.db", "wqdb_org.db", "xkcdb_com.db"
+    )
+
+    /** Parses manifest JSON into catalog entries, resolving each entry's
+     * download URL against [manifestUrl] (same rule applyDbUpdate used). */
+    private fun parseCatalog(
+        manifestText: String,
+        manifestUrl: String
+    ): List<CatalogEntry> {
+        val root = try {
+            JSONObject(manifestText)
+        } catch (e: Exception) {
+            return emptyList()
+        }
+        val dbs = root.optJSONObject("databases") ?: return emptyList()
+        val out = mutableListOf<CatalogEntry>()
+        val keys = dbs.keys()
+        while (keys.hasNext()) {
+            val file = keys.next()
+            if (!file.endsWith(".db", ignoreCase = true)) continue
+            val e = dbs.optJSONObject(file) ?: continue
+            val fileUrl = e.optString("url", "").trim().ifEmpty { file }
+            val resolved = try {
+                java.net.URL(java.net.URL(manifestUrl), fileUrl).toString()
+            } catch (ex: Exception) {
+                continue
+            }
+            out += CatalogEntry(
+                file = file,
+                label = e.optString("label", "").trim(),
+                date = e.optString("date", "").trim().ifEmpty { null },
+                count = e.optLong("count", 0),
+                size = e.optLong("size", 0),
+                revision = e.optInt("revision", 0),
+                sha256 = e.optString("sha256", "").trim(),
+                contentSha256 = e.optString("contentSha256", "").trim(),
+                downloadUrl = resolved
+            )
+        }
+        return out.sortedBy { it.file }
+    }
+
     /**
-     * v1.60: downloads the manifest at the configured URL and merges every
-     * database whose manifest revision is newer than the local one (the
-     * greater of the last applied update stamp and [BUNDLED_DATA_REVISION]).
-     * Call off the main thread. Never throws: per-database failures come
-     * back as [DbUpdateOutcome]s.
+     * The catalog from the last successful manifest fetch (cached in
+     * prefs), so it works offline. Empty when no manifest has ever been
+     * fetched. Re-parsed against the CURRENT effective manifest URL on
+     * every call, so a changed override re-resolves download URLs.
+     */
+    fun catalogEntries(): List<CatalogEntry> {
+        val cached = prefs.getString(KEY_DB_CATALOG_CACHE, null)
+        if (cached.isNullOrBlank()) return emptyList()
+        return parseCatalog(cached, getDbUpdateUrl())
+    }
+
+    /**
+     * Fetches the manifest (blocking — call off the main thread), caches
+     * the raw JSON in prefs on success, and returns the parsed catalog.
+     * Returns null on any failure; the cached catalog is left untouched.
+     */
+    fun refreshCatalog(): List<CatalogEntry>? {
+        val manifestUrl = getDbUpdateUrl()
+        val text = try {
+            downloadText(manifestUrl, MAX_MANIFEST_BYTES)
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "catalog fetch failed", e)
+            return null
+        }
+        val parsed = parseCatalog(text, manifestUrl)
+        if (parsed.isEmpty()) return null
+        prefs.edit().putString(KEY_DB_CATALOG_CACHE, text).apply()
+        return parsed
+    }
+
+    /** Catalog files to consider: the manifest's, or (before the first
+     * successful fetch) the built-in fallback list — for installed
+     * detection only. */
+    fun knownCatalogFiles(): List<String> {
+        val fromCatalog = catalogEntries().map { it.file }
+        return if (fromCatalog.isNotEmpty()) fromCatalog else FALLBACK_CATALOG_FILES
+    }
+
+    /** The on-device file for a catalog database. */
+    fun catalogDeviceFile(file: String): File =
+        appContext.getDatabasePath("bundled_$file")
+
+    /** "Installed" = the on-device file exists. */
+    fun isCatalogDbInstalled(file: String): Boolean = catalogDeviceFile(file).exists()
+
+    /** Catalog files (manifest-driven) currently installed on-device. */
+    fun installedCatalogFiles(): List<String> =
+        knownCatalogFiles().filter { isCatalogDbInstalled(it) }
+
+    /** Revision stamped when a catalog database was installed/updated. */
+    fun installedDbRevision(file: String): Int =
+        prefs.getInt(KEY_DB_UPDATE_REV + file, 0)
+
+    fun setInstalledDbRevision(file: String, revision: Int) {
+        prefs.edit().putInt(KEY_DB_UPDATE_REV + file, revision).apply()
+    }
+
+    /** Label for a catalog file: catalog entry first, then the built-in
+     * overrides, then a prettified file name. */
+    fun catalogLabelFor(file: String): String =
+        catalogEntries().firstOrNull { it.file == file }?.label
+            ?.takeIf { it.isNotBlank() }
+            ?: BUNDLED_LABEL_OVERRIDES[file]
+            ?: prettifyLabel(file.removeSuffix(".db"))
+
+    /** Collection date for a catalog file: catalog entry first, then the
+     * built-in overrides. */
+    fun catalogDateFor(file: String): String? =
+        catalogEntries().firstOrNull { it.file == file }?.date
+            ?.takeIf { it.isNotBlank() }
+            ?: BUNDLED_DB_DATES[file]
+
+    /** Total bytes used by installed catalog databases (Settings footer). */
+    fun totalInstalledCatalogBytes(): Long =
+        installedCatalogFiles().sumOf { catalogDeviceFile(it).length() }
+
+    /** First-run gate: no catalog database installed and setup not skipped. */
+    fun needsDatabaseSetup(): Boolean =
+        installedCatalogFiles().isEmpty() &&
+            !prefs.getBoolean(KEY_DB_SETUP_SKIPPED, false)
+
+    fun dbSetupSkipped(): Boolean = prefs.getBoolean(KEY_DB_SETUP_SKIPPED, false)
+
+    fun setDbSetupSkipped() {
+        prefs.edit().putBoolean(KEY_DB_SETUP_SKIPPED, true).apply()
+    }
+
+    /**
+     * v1.89: content fingerprint of a quotes table — SHA-256 over the
+     * rows ORDER BY number, each row contributing the UTF-8 string
+     * "number\n<rating or empty>\n<text>\n<url>\n". Must match the
+     * publisher-side computation in the manifest exactly (used by the
+     * one-time migration to recognize databases an upgraded install
+     * already has). Returns null when the file can't be read.
+     */
+    private fun quotesContentSha256(dbFile: File): String? {
+        if (!dbFile.exists()) return null
+        var db: android.database.sqlite.SQLiteDatabase? = null
+        return try {
+            db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                dbFile.absolutePath, null,
+                android.database.sqlite.SQLiteDatabase.OPEN_READONLY
+            )
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            db.rawQuery(
+                "SELECT number, rating, text, url FROM quotes ORDER BY number",
+                null
+            ).use { c ->
+                val numberIdx = c.getColumnIndex("number")
+                val ratingIdx = c.getColumnIndex("rating")
+                val textIdx = c.getColumnIndex("text")
+                val urlIdx = c.getColumnIndex("url")
+                if (numberIdx < 0 || textIdx < 0) return null
+                while (c.moveToNext()) {
+                    val number = c.getLong(numberIdx)
+                    val rating = if (ratingIdx < 0 || c.isNull(ratingIdx)) {
+                        ""
+                    } else {
+                        c.getString(ratingIdx) ?: ""
+                    }
+                    val text = c.getString(textIdx) ?: ""
+                    val url = if (urlIdx < 0) "" else c.getString(urlIdx) ?: ""
+                    md.update(
+                        "$number\n$rating\n$text\n$url\n"
+                            .toByteArray(Charsets.UTF_8)
+                    )
+                }
+            }
+            md.digest().joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "content hash failed for ${dbFile.name}", e)
+            null
+        } finally {
+            try {
+                db?.close()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
+     * Lands a downloaded + verified catalog database: merges into the
+     * on-device copy when one exists (preserving user category tables),
+     * otherwise moves the file into place and runs the raw-SQLite
+     * pre-heal column checks. Stamps the installed revision either way.
+     * Caller must hold the per-file lock (or be installDb/applyDbUpdate,
+     * which do); the merge path locks internally regardless.
+     */
+    private fun landDownloadedDb(entry: CatalogEntry, downloaded: File) {
+        val deviceFile = catalogDeviceFile(entry.file)
+        if (deviceFile.exists()) {
+            mergeDbFileIntoDevice(entry.file, downloaded)
+        } else {
+            deviceFile.parentFile?.mkdirs()
+            if (!downloaded.renameTo(deviceFile)) {
+                downloaded.copyTo(deviceFile, overwrite = true)
+                downloaded.delete()
+            }
+            ensureImportedStatusColumn(deviceFile)
+        }
+        setInstalledDbRevision(entry.file, entry.revision)
+        bumpCatalogChanged()
+    }
+
+    /**
+     * v1.89: downloads and installs a catalog database (or replaces /
+     * updates the installed copy). Progress reports (file, bytes done,
+     * total bytes) — total falls back to the catalog size when the
+     * server doesn't send a length. Fails cleanly when the file isn't in
+     * the catalog. Runs on Dispatchers.IO; serialized per file.
+     */
+    suspend fun installDb(
+        file: String,
+        onProgress: (file: String, bytesDone: Long, totalBytes: Long) -> Unit =
+            { _, _, _ -> }
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val entry = catalogEntries().firstOrNull { it.file == file }
+                ?: refreshCatalog()?.firstOrNull { it.file == file }
+                ?: return@withContext Result.failure(
+                    IllegalStateException("$file isn't in the database catalog.")
+                )
+            synchronized(bundledDbLock(file)) {
+                val tmp = File.createTempFile(
+                    "db_install_", ".db", appContext.cacheDir
+                )
+                try {
+                    downloadToFile(entry.downloadUrl, tmp, MAX_DB_DOWNLOAD_BYTES)
+                        { done, total ->
+                            onProgress(
+                                file, done,
+                                if (total > 0) total else entry.size
+                            )
+                        }
+                    if (entry.sha256.isNotBlank() &&
+                        sha256Of(tmp) != entry.sha256.lowercase()
+                    ) {
+                        return@withContext Result.failure(
+                            IllegalStateException(
+                                "Download failed verification (SHA-256 " +
+                                    "mismatch) — not installed."
+                            )
+                        )
+                    }
+                    val problem = validateQuoteDb(tmp)
+                    if (problem != null) {
+                        return@withContext Result.failure(
+                            IllegalStateException(problem)
+                        )
+                    }
+                    landDownloadedDb(entry, tmp)
+                } finally {
+                    tmp.delete()
+                }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "installDb failed for $file", e)
+            Result.failure(e)
+        }
+    }
+
+    /** v1.89: forced re-download — same as [installDb] (which never
+     * skips on revision), named for the manager screen's action. */
+    suspend fun redownloadDb(
+        file: String,
+        onProgress: (file: String, bytesDone: Long, totalBytes: Long) -> Unit =
+            { _, _, _ -> }
+    ): Result<Unit> = installDb(file, onProgress)
+
+    /**
+     * v1.89: removes an installed catalog database: closes its Room
+     * instance, deletes the file (plus -wal/-shm), and clears its
+     * revision stamp. Favorites/categories stored inside the file go
+     * with it. If it was the current database, switches to the first
+     * remaining installed catalog database, else My Quotes. Returns
+     * false when it wasn't installed.
+     */
+    fun uninstallDb(file: String): Boolean {
+        var removed = false
+        synchronized(bundledDbLock(file)) {
+            val deviceFile = catalogDeviceFile(file)
+            if (deviceFile.exists()) {
+                val wasCurrent = _currentDbId.value == "asset:$file"
+                evictQuoteDatabase("asset:$file")
+                deviceFile.delete()
+                File(deviceFile.path + "-wal").delete()
+                File(deviceFile.path + "-shm").delete()
+                prefs.edit().remove(KEY_DB_UPDATE_REV + file).apply()
+                if (wasCurrent) {
+                    val next = bundledDbs().firstOrNull()?.id ?: MY_QUOTES_ID
+                    switchDatabase(next)
+                }
+                bumpCatalogChanged()
+                removed = true
+            }
+        }
+        return removed
+    }
+
+    /**
+     * v1.89: startup migration + silent auto-update. Runs on the
+     * background heal thread; never blocks the UI and every failure is
+     * silent (logged only) so an offline launch is unaffected.
+     *
+     * Migration (once): devices upgrading from the bundled era already
+     * have some catalog databases on disk with no revision stamps. For
+     * each one whose quotes content hash matches the manifest, stamp the
+     * manifest revision (it's already current — no download). A mismatch
+     * stays at revision 0 so the update pass below repairs it with a
+     * merge. If the manifest can't be fetched, the flag is NOT set and
+     * the migration retries next launch.
+     *
+     * Auto-update (every startup): refresh the catalog; every INSTALLED
+     * database with a newer manifest revision is downloaded, verified,
+     * and merged in place. Never auto-installs anything new.
+     */
+    private fun runDownloadableStartupPass() {
+        if (!prefs.getBoolean(KEY_DL_MIGRATION_DONE, false)) {
+            val entries = try {
+                refreshCatalog()
+            } catch (e: Exception) {
+                null
+            }
+            if (entries != null) {
+                for (entry in entries) {
+                    try {
+                        if (installedDbRevision(entry.file) > 0) continue
+                        val deviceFile = catalogDeviceFile(entry.file)
+                        if (!deviceFile.exists()) continue
+                        val local = quotesContentSha256(deviceFile)
+                        if (local != null &&
+                            entry.contentSha256.isNotBlank() &&
+                            local.equals(entry.contentSha256, ignoreCase = true)
+                        ) {
+                            setInstalledDbRevision(entry.file, entry.revision)
+                        }
+                    } catch (e: Exception) {
+                        Log.w(
+                            "QuoteBrowser",
+                            "dl migration failed for ${entry.file}", e
+                        )
+                    }
+                }
+                prefs.edit().putBoolean(KEY_DL_MIGRATION_DONE, true).apply()
+            }
+        }
+        val entries = try {
+            refreshCatalog()
+        } catch (e: Exception) {
+            null
+        } ?: catalogEntries()
+        for (entry in entries) {
+            try {
+                if (!isCatalogDbInstalled(entry.file)) continue
+                if (entry.revision <= installedDbRevision(entry.file)) continue
+                applyDbUpdate(entry)
+            } catch (e: Exception) {
+                Log.w("QuoteBrowser", "auto-update failed for ${entry.file}", e)
+            }
+        }
+    }
+
+    /**
+     * v1.60: downloads the manifest and merges every INSTALLED database
+     * whose manifest revision is newer than the installed one.
+     * v1.89: reworked onto the catalog (same path as the startup
+     * auto-update); the effective URL (override or default) supplies the
+     * manifest. Call off the main thread. Never throws: per-database
+     * failures come back as [DbUpdateOutcome]s.
      */
     fun checkForDatabaseUpdates(): List<DbUpdateOutcome> {
         fun failed(detail: String) = listOf(
             DbUpdateOutcome("", "", DbUpdateOutcome.UpdateStatus.FAILED, detail)
         )
-        val manifestUrl = getDbUpdateUrl().trim()
-        if (manifestUrl.isEmpty()) {
-            return failed("No update URL set — add one in Settings → Your data.")
-        }
-        val manifestText = try {
-            downloadText(manifestUrl, MAX_MANIFEST_BYTES)
-        } catch (e: Exception) {
-            return failed(
-                "Couldn't download the update list: ${e.message ?: e.javaClass.simpleName}"
-            )
-        }
-        val dbs = try {
-            JSONObject(manifestText).optJSONObject("databases")
+        val entries = try {
+            refreshCatalog()
         } catch (e: Exception) {
             null
         } ?: return failed(
-            "The update list isn't valid (expected a JSON \"databases\" section)."
+            "Couldn't download the update list — check your connection " +
+                "and try again."
         )
-        val assets = try {
-            appContext.assets.list(ASSET_DIR)
-        } catch (e: Exception) {
-            null
-        } ?: emptyArray()
+        val installed = entries.filter { isCatalogDbInstalled(it.file) }
+        if (installed.isEmpty()) {
+            return listOf(
+                DbUpdateOutcome(
+                    "", "Databases", DbUpdateOutcome.UpdateStatus.UP_TO_DATE,
+                    "No downloaded databases are installed yet — install " +
+                        "some in Settings → Databases."
+                )
+            )
+        }
         val outcomes = mutableListOf<DbUpdateOutcome>()
-        for (assetName in assets.filter { it.endsWith(".db", ignoreCase = true) }.sorted()) {
-            val entry = dbs.optJSONObject(assetName) ?: continue
-            val label = shortLabel("asset:$assetName")
+        for (entry in installed) {
+            val label = shortLabel(entry.id)
             try {
-                outcomes += applyDbUpdate(assetName, label, manifestUrl, entry)
+                outcomes += applyDbUpdate(entry)
             } catch (e: Exception) {
-                Log.w("QuoteBrowser", "db update failed for $assetName", e)
+                Log.w("QuoteBrowser", "db update failed for ${entry.file}", e)
                 outcomes += DbUpdateOutcome(
-                    assetName, label, DbUpdateOutcome.UpdateStatus.FAILED,
+                    entry.file, label, DbUpdateOutcome.UpdateStatus.FAILED,
                     e.message ?: e.javaClass.simpleName
                 )
             }
         }
-        if (outcomes.isEmpty()) {
-            outcomes += DbUpdateOutcome(
-                "", "Update list", DbUpdateOutcome.UpdateStatus.UP_TO_DATE,
-                "No entries matched this app's data files."
-            )
-        }
         return outcomes
     }
 
-    private fun applyDbUpdate(
-        assetName: String,
-        label: String,
-        manifestUrl: String,
-        entry: JSONObject
-    ): DbUpdateOutcome {
-        val remoteRev = entry.optInt("revision", -1)
+    /**
+     * v1.89: downloads one catalog entry and lands it (merge when the
+     * database is installed, fresh placement otherwise), stamping the
+     * installed revision. Generalized from the v1.60 asset-based version
+     * to take the parsed catalog entry.
+     */
+    private fun applyDbUpdate(entry: CatalogEntry): DbUpdateOutcome {
+        val assetName = entry.file
+        val label = shortLabel(entry.id)
+        val remoteRev = entry.revision
         if (remoteRev < 0) {
             return DbUpdateOutcome(
                 assetName, label, DbUpdateOutcome.UpdateStatus.FAILED,
                 "Update entry has no revision number."
             )
         }
-        val localRev = maxOf(
-            prefs.getInt(KEY_DB_UPDATE_REV + assetName, 0),
-            BUNDLED_DATA_REVISION
-        )
+        val localRev = installedDbRevision(assetName)
         if (remoteRev <= localRev) {
             return DbUpdateOutcome(
                 assetName, label, DbUpdateOutcome.UpdateStatus.UP_TO_DATE,
                 "Already current (revision $localRev)."
             )
         }
-        val fileUrl = entry.optString("url", "").trim()
-        if (fileUrl.isEmpty()) {
-            return DbUpdateOutcome(
-                assetName, label, DbUpdateOutcome.UpdateStatus.FAILED,
-                "Update entry has no download URL."
-            )
-        }
-        val resolved = try {
-            java.net.URL(java.net.URL(manifestUrl), fileUrl).toString()
-        } catch (e: Exception) {
-            return DbUpdateOutcome(
-                assetName, label, DbUpdateOutcome.UpdateStatus.FAILED,
-                "Bad download URL: $fileUrl"
-            )
-        }
         val tmp = File.createTempFile("db_update_", ".db", appContext.cacheDir)
         try {
-            downloadToFile(resolved, tmp, MAX_DB_DOWNLOAD_BYTES)
-            val expected = entry.optString("sha256", "").trim().lowercase()
-            if (expected.isNotEmpty() && sha256Of(tmp) != expected) {
+            downloadToFile(entry.downloadUrl, tmp, MAX_DB_DOWNLOAD_BYTES)
+            if (entry.sha256.isNotBlank() &&
+                sha256Of(tmp) != entry.sha256.lowercase()
+            ) {
                 return DbUpdateOutcome(
                     assetName, label, DbUpdateOutcome.UpdateStatus.FAILED,
                     "Download failed verification (SHA-256 mismatch) — not applied."
                 )
             }
-            val deviceFile = appContext.getDatabasePath("bundled_$assetName")
+            val problem = validateQuoteDb(tmp)
+            if (problem != null) {
+                return DbUpdateOutcome(
+                    assetName, label, DbUpdateOutcome.UpdateStatus.FAILED,
+                    problem
+                )
+            }
+            val deviceFile = catalogDeviceFile(assetName)
             val before = quoteCountOnFile(deviceFile)
-            mergeDbFileIntoDevice(assetName, tmp)
+            landDownloadedDb(entry, tmp)
             val after = quoteCountOnFile(deviceFile)
-            prefs.edit().putInt(KEY_DB_UPDATE_REV + assetName, remoteRev).apply()
             val fmt = java.text.NumberFormat.getIntegerInstance()
             return DbUpdateOutcome(
                 assetName, label, DbUpdateOutcome.UpdateStatus.UPDATED,
@@ -4972,7 +5376,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
         }
     }
 
-    private fun quoteCountOnFile(file: File): Long {
+    /** Live quote count of a database file (0 when missing/unreadable).
+     * Public for the Databases manager screen (v1.89). */
+    fun quoteCountOnFile(file: File): Long {
         if (!file.exists()) return 0
         var db: android.database.sqlite.SQLiteDatabase? = null
         return try {
@@ -4998,6 +5404,8 @@ class DatabaseManager private constructor(private val appContext: Context) {
         val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
+            // v1.89: GitHub release URLs 302 to signed storage URLs.
+            instanceFollowRedirects = true
             setRequestProperty("User-Agent", "QuoteBrowser-db-update")
         }
         try {
@@ -5023,10 +5431,17 @@ class DatabaseManager private constructor(private val appContext: Context) {
         }
     }
 
-    private fun downloadToFile(url: String, dest: File, maxBytes: Long) {
+    private fun downloadToFile(
+        url: String,
+        dest: File,
+        maxBytes: Long,
+        onProgress: ((done: Long, total: Long) -> Unit)? = null
+    ) {
         val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 120_000
+            // v1.89: GitHub release URLs 302 to signed storage URLs.
+            instanceFollowRedirects = true
             setRequestProperty("User-Agent", "QuoteBrowser-db-update")
         }
         try {
@@ -5034,6 +5449,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
             if (code != java.net.HttpURLConnection.HTTP_OK) {
                 throw java.io.IOException("HTTP $code")
             }
+            val contentLength = conn.contentLengthLong
             dest.outputStream().use { out ->
                 conn.inputStream.use { input ->
                     val buf = ByteArray(32768)
@@ -5044,6 +5460,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
                         total += n
                         if (total > maxBytes) throw java.io.IOException("database too large")
                         out.write(buf, 0, n)
+                        onProgress?.invoke(total, contentLength)
                     }
                 }
             }
@@ -5065,25 +5482,11 @@ class DatabaseManager private constructor(private val appContext: Context) {
         return md.digest().joinToString("") { "%02x".format(it) }
     }
 
-    /** Merge one bundled asset into its on-device copy (see [refreshBundledDatabases]). */
-    private fun refreshOneBundledDatabase(assetName: String) {
-        // The asset isn't a real file — stage it in cacheDir to ATTACH.
-        val tmp = File.createTempFile("bundled_refresh_", ".db", appContext.cacheDir)
-        try {
-            appContext.assets.open("$ASSET_DIR/$assetName").use { input ->
-                tmp.outputStream().use { out -> input.copyTo(out) }
-            }
-            mergeDbFileIntoDevice(assetName, tmp)
-        } finally {
-            tmp.delete()
-        }
-    }
-
     /**
      * v1.60: merges [srcFile] (a SQLite .db with a quotes table) into the
-     * on-device copy of [assetName], preserving the user's category tables
-     * (same guarantees as [refreshBundledDatabases]). Shared by the bundled
-     * refresh and the download-based update check.
+     * on-device copy of [assetName], preserving the user's category
+     * tables. v1.89: shared by the catalog download paths (install,
+     * re-download, startup auto-update, manual update check).
      */
     private fun mergeDbFileIntoDevice(assetName: String, srcFile: File) {
         // v1.88.6: serialize with the schema healer on the per-database
@@ -5364,13 +5767,20 @@ class DatabaseManager private constructor(private val appContext: Context) {
      * opened for write.
      */
     private fun healBundledSchemasSync() {
-        val files = try {
-            appContext.assets.list(ASSET_DIR)
+        // v1.89: no assets to enumerate — heal every catalog database
+        // file present in the app's database directory (files are named
+        // bundled_<file>.db). Same set the old asset listing produced on
+        // an installed device.
+        val dbDir = appContext.getDatabasePath("bundled_probe").parentFile
+        val names = try {
+            dbDir?.list { _, name ->
+                name.startsWith("bundled_") && name.endsWith(".db", ignoreCase = true)
+            }?.map { it.removePrefix("bundled_") }?.sorted()
         } catch (e: Exception) {
-            Log.w("QuoteBrowser", "bundled sync heal: cannot list assets", e)
-            return
+            Log.w("QuoteBrowser", "bundled sync heal: cannot list db dir", e)
+            null
         } ?: return
-        for (name in files.filter { it.endsWith(".db", ignoreCase = true) }.sorted()) {
+        for (name in names) {
             val dbName = "bundled_$name"
             if (!appContext.getDatabasePath(dbName).exists()) continue
             try {
@@ -5402,7 +5812,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
     /** Read-only check: true when the file lacks a Room-required column. */
     private fun bundledSchemaNeedsHeal(dbName: String): Boolean {
         val file = appContext.getDatabasePath(dbName)
-        if (!file.exists()) return false // fresh copy path: createFromAsset handles it
+        if (!file.exists()) return false // no file: nothing to heal (install creates it healed)
         var db: android.database.sqlite.SQLiteDatabase? = null
         return try {
             db = android.database.sqlite.SQLiteDatabase.openDatabase(
@@ -5535,150 +5945,11 @@ class DatabaseManager private constructor(private val appContext: Context) {
         try { File(dbFile.absolutePath + "-shm").delete() } catch (_: Exception) {}
     }
 
-    /**
-     * v1.88.10: last-resort recovery for a bundled database file that fails
-     * Room's pre-packaged validation even after the heal passes (a corrupt
-     * or otherwise unhealable leftover — e.g. a version-0 copy from the
-     * v1.88.x era whose schema still lacks `status` after every heal
-     * attempt). The APK asset is verified good, so: back the stale file
-     * up, delete it, and let Room copy the asset fresh (validation then
-     * passes by construction). Afterwards the user's tables (categories
-     * etc. — everything except `quotes`, which comes from the asset) are
-     * restored from the backup on a best-effort basis. Throws only if the
-     * packaged asset itself cannot be opened (two attempts); the broken
-     * file is always cleared first, so the next launch starts clean rather
-     * than re-validating a stale copy.
-     */
-    private fun rebuildBundledFromAsset(dbName: String, assetPath: String): QuoteDatabase {
-        val dbFile = appContext.getDatabasePath(dbName)
-        val bakFile = File(
-            dbFile.parent,
-            "${dbFile.name}.corrupt-${System.currentTimeMillis()}.bak"
-        )
-        try {
-            if (dbFile.exists()) dbFile.copyTo(bakFile, overwrite = true)
-            Log.w("QuoteBrowser", "bundled db $dbName backed up to ${bakFile.name}")
-        } catch (e: Exception) {
-            Log.w("QuoteBrowser", "bundled db $dbName backup failed", e)
-        }
-        try { dbFile.delete() } catch (_: Exception) {}
-        try { File(dbFile.absolutePath + "-wal").delete() } catch (_: Exception) {}
-        try { File(dbFile.absolutePath + "-shm").delete() } catch (_: Exception) {}
-        val fresh = Room.databaseBuilder(
-            appContext, QuoteDatabase::class.java,
-            dbName
-        )
-            .createFromAsset(assetPath)
-            .addMigrations(QUOTES_MIGRATION_1_2, QUOTES_MIGRATION_2_3)
-            .addCallback(bundledBusyTimeoutCallback)
-            .build()
-        try {
-            fresh.openHelper.writableDatabase
-        } catch (e: Exception) {
-            // The APK asset is verified at build time, so this is not
-            // expected — but if the fresh copy still fails, never leave
-            // the broken copy behind to poison the next launch: close
-            // the failed handle, clear the file, and try once more from
-            // the asset. If the retry also fails, clear the file again
-            // so the next launch starts clean, and return the instance
-            // so the real error surfaces at the query site.
-            Log.e("QuoteBrowser", "bundled asset copy failed for $dbName, retrying once", e)
-            try { fresh.close() } catch (_: Exception) {}
-            clearDbFiles(dbFile)
-            val retry = Room.databaseBuilder(
-                appContext, QuoteDatabase::class.java,
-                dbName
-            )
-                .createFromAsset(assetPath)
-                .addMigrations(QUOTES_MIGRATION_1_2, QUOTES_MIGRATION_2_3)
-                .addCallback(bundledBusyTimeoutCallback)
-                .build()
-            try {
-                retry.openHelper.writableDatabase
-            } catch (e2: Exception) {
-                // Both copies from the APK asset failed — the asset itself
-                // is broken. The failed copy was cleared above; throw the
-                // real error so it surfaces at the query site, and the next
-                // launch starts clean instead of re-validating a stale file.
-                Log.e("QuoteBrowser", "bundled asset retry failed for $dbName", e2)
-                try { retry.close() } catch (_: Exception) {}
-                clearDbFiles(dbFile)
-                throw IllegalStateException(
-                    "bundled db $dbName could not be opened from the packaged asset", e2
-                )
-            }
-            if (bakFile.exists()) restoreUserTablesFromBackup(retry, bakFile, dbName)
-            return retry
-        }
-        if (bakFile.exists()) restoreUserTablesFromBackup(fresh, bakFile, dbName)
-        return fresh
-    }
-
-    /**
-     * v1.88.10: best-effort restore of the user's own tables (categories,
-     * quote_categories, category_settings, ...) from a backed-up stale
-     * bundled database into a fresh asset copy. `quotes` and its FTS
-     * tables always come from the asset and are never restored; Room/FTS
-     * internals are skipped. Every table is attempted independently — a
-     * corrupt backup simply yields fewer restored tables, never a crash.
-     */
-    private fun restoreUserTablesFromBackup(
-        fresh: QuoteDatabase,
-        bakFile: File,
-        dbName: String
-    ) {
-        var attached = false
-        try {
-            val sdb = fresh.openHelper.writableDatabase
-            sdb.execSQL("ATTACH DATABASE ? AS bak", arrayOf<Any?>(bakFile.absolutePath))
-            attached = true
-            val tables = mutableListOf<Pair<String, String?>>()
-            try {
-                sdb.query(
-                    SimpleSQLiteQuery(
-                        "SELECT name, sql FROM bak.sqlite_master " +
-                            "WHERE type='table' AND sql IS NOT NULL"
-                    )
-                ).use { c ->
-                    val nameIdx = c.getColumnIndex("name")
-                    val sqlIdx = c.getColumnIndex("sql")
-                    while (c.moveToNext()) {
-                        tables += c.getString(nameIdx) to c.getString(sqlIdx)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w("QuoteBrowser", "bundled db $dbName: cannot list backup tables", e)
-            }
-            var restored = 0
-            for ((name, sql) in tables) {
-                if (name == "quotes" || name.startsWith("quotes_fts") ||
-                    name.startsWith("sqlite_") || name.startsWith("room_") ||
-                    name == "android_metadata"
-                ) continue
-                try {
-                    // Recreate the table from the backup's own DDL, then copy rows.
-                    val ddl = (sql ?: continue).replaceFirst("CREATE TABLE", "CREATE TABLE IF NOT EXISTS")
-                    sdb.execSQL(ddl)
-                    sdb.compileStatement(
-                        "INSERT OR IGNORE INTO main.\"$name\" SELECT * FROM bak.\"$name\""
-                    ).executeInsert()
-                    restored++
-                    Log.i("QuoteBrowser", "bundled db $dbName: restored table $name")
-                } catch (e: Exception) {
-                    Log.w("QuoteBrowser", "bundled db $dbName: cannot restore table $name", e)
-                }
-            }
-            Log.i("QuoteBrowser", "bundled db $dbName: restored $restored user tables from backup")
-        } catch (e: Exception) {
-            Log.w("QuoteBrowser", "bundled db $dbName: backup restore failed", e)
-        } finally {
-            if (attached) {
-                try {
-                    fresh.openHelper.writableDatabase.execSQL("DETACH DATABASE bak")
-                } catch (_: Exception) {}
-            }
-        }
-    }
+    // v1.89: rebuildBundledFromAsset / restoreUserTablesFromBackup
+    // were removed with the bundled assets — there is no packaged
+    // copy to rebuild from anymore. A catalog database file that
+    // cannot be healed is repaired by re-downloading it (the merge
+    // path preserves user tables), never by deleting it here.
 
     /**
      * Close and drop the cached Room instance for a database id (v1.83:
@@ -5717,10 +5988,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 }
             }
         }
-        // v1.88.11: the bundled-asset branch can run the v1.88.10
-        // last-resort rebuild (backup + delete + multi-MB asset copy +
-        // table restore). That heavy disk I/O must never run under the
-        // global cache monitor — on 2026-09-20 it ran on the main
+        // v1.88.11: the catalog-database branch can run heavy disk I/O
+        // (pre-heal + eager Room validation). That must never run under
+        // the global cache monitor — on 2026-09-20 it ran on the main
         // thread inside synchronized(quoteDbCache) long enough to trip
         // the system ANR. Build outside the lock, then publish; on a
         // race the loser closes its duplicate instance.
@@ -5758,7 +6028,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 return kotlinx.coroutines.runBlocking { deferred.await() }
             }
             try {
-                val db = openAssetDatabase(id)
+                val db = openCatalogDatabase(id)
                 synchronized(quoteDbCache) {
                     val existing = quoteDbCache[id]
                     if (existing != null) {
@@ -5796,136 +6066,94 @@ class DatabaseManager private constructor(private val appContext: Context) {
     }
 
     /**
-     * Opens the bundled-asset database: raw-SQL pre-heal, Room build,
-     * eager validation, re-heal on schema failure, and as a last
-     * resort a backup + rebuild-from-asset with user-table restore
-     * (v1.88.10). Heavy disk I/O — never call under the quoteDbCache
-     * monitor and never on the main thread. Per-database work stays
-     * serialized on bundledDbLock, shared with the startup healer
-     * and the background refresh merge.
+     * v1.89: opens an installed catalog database from its on-device
+     * file: raw-SQL pre-heal, Room build, eager open, and one re-heal +
+     * rebuild retry on a schema failure. There is NO createFromAsset
+     * anymore — nothing ships in the APK — and a missing file throws a
+     * clear exception instead (the UI never offers uninstalled
+     * databases; a stale id reaches here only from an uninstalled
+     * current selection, and callers already treat open failures as an
+     * empty database). The file is never deleted here, so user category
+     * tables are preserved; a file that resists healing is repaired by
+     * re-downloading (Settings → Databases), not by deleting it.
+     *
+     * History (kept from the asset era — the races are identical): the
+     * v1.88.4 pre-heal exists because a failed validation leaves the
+     * copied file behind and Room re-validates the stale file on every
+     * open. v1.88.5 added the eager open (force validation now, not on
+     * first query) + re-heal/retry. v1.88.6 root-caused the remaining
+     * crash to a lock race (refresh merge holding a write lock past the
+     * heal's busy_timeout) and fixed it with the startup heal pass plus
+     * the per-database JVM lock shared by healer, merge, and opener.
+     * Heavy disk I/O — never call under the quoteDbCache monitor and
+     * never on the main thread.
      */
-    private fun openAssetDatabase(id: String): QuoteDatabase {
-        val assetPath = "$ASSET_DIR/${id.removePrefix("asset:")}"
-        val dbName = "bundled_${id.removePrefix("asset:")}"
-        // v1.88.16: startup diagnostics — time every bundled open.
+    private fun openCatalogDatabase(id: String): QuoteDatabase {
+        val fileName = id.removePrefix("asset:")
+        val dbName = "bundled_$fileName"
+        val deviceFile = appContext.getDatabasePath(dbName)
+        if (!deviceFile.exists()) {
+            throw IllegalStateException(
+                "Database $fileName is not installed. " +
+                    "Install it from Settings → Databases."
+            )
+        }
+        // v1.88.16: startup diagnostics — time every catalog open.
         val openT0 = android.os.SystemClock.elapsedRealtime()
         com.quotebrowser.app.StartupWatchdog.mark("db open start: $dbName")
         try {
-        // v1.88.4: a previous release's failed pre-packaged
-        // validation leaves its copied file behind, and Room
-        // re-validates that stale file on every open — before
-        // the background bundled-data refresh can heal it.
-        // Ensure the required columns with raw SQLite BEFORE
-        // Room validates, mirroring ensureImportedStatusColumn.
-        // v1.88.5: v1.88.4's pre-heal wasn't enough — the 10:50
-        // crash showed the stale schema surviving it. Eagerly
-        // open the DB after build to force Room's validation
-        // now (not on first query), and on
-        // "Pre-packaged database has an invalid schema" close,
-        // re-heal (clearing stale WAL/SHM first), and rebuild
-        // once before giving up. The file is never deleted, so
-        // user category tables are preserved.
-        // v1.88.6: root cause found — the 11:06 crash was a lock
-        // race: the refresh thread held a SQLite write lock on
-        // the stale file during its multi-second merge while
-        // the pre-heal waited only 5s (busy_timeout), failed
-        // SQLITE_BUSY, and Room validated the unhealed schema;
-        // the crash then killed the process before the refresh
-        // ever finished (self-perpetuating). Fixed with a
-        // heal pass on the background worker thread before the
-        // refresh merge (no contender — v1.88.7 moved it off
-        // the main thread, which had frozen the launch splash)
-        // plus a per-database JVM lock shared by the healer
-        // and the refresh merge, so any residual overlap waits
-        // instead of racing.
-        val healOk = ensureBundledSchemaHealed(dbName)
-        // v1.88.17: fine-grained markers to pinpoint the ~10s open cost
-        // seen in the 2026-09-20 startup log.
-        // v1.88.18: also record the heal outcome — the v1.88.17 log proved
-        // the heal fails on healthy DBs and Room opens them fine without
-        // it, so a "healed=false" here is expected, not alarming.
-        com.quotebrowser.app.StartupWatchdog.mark(
-            "db open heal done: $dbName " +
-                "(${(android.os.SystemClock.elapsedRealtime() - openT0)}ms, healed=$healOk)"
-        )
-        fun buildBundled(): QuoteDatabase {
-            return Room.databaseBuilder(
-                appContext, QuoteDatabase::class.java,
-                dbName
-            )
-                .createFromAsset(assetPath)
-                .addMigrations(QUOTES_MIGRATION_1_2, QUOTES_MIGRATION_2_3)
-                .addCallback(bundledBusyTimeoutCallback)
-                .build()
-        }
-        var db = buildBundled()
-        com.quotebrowser.app.StartupWatchdog.mark(
-            "db open built: $dbName " +
-                "(${(android.os.SystemClock.elapsedRealtime() - openT0)}ms)"
-        )
-        try {
-            db.openHelper.writableDatabase
+            val healOk = ensureBundledSchemaHealed(dbName)
             com.quotebrowser.app.StartupWatchdog.mark(
-                "db open validated: $dbName " +
+                "db open heal done: $dbName " +
+                    "(${(android.os.SystemClock.elapsedRealtime() - openT0)}ms, healed=$healOk)"
+            )
+            fun buildCatalog(): QuoteDatabase {
+                return Room.databaseBuilder(
+                    appContext, QuoteDatabase::class.java,
+                    deviceFile.absolutePath
+                )
+                    .addMigrations(QUOTES_MIGRATION_1_2, QUOTES_MIGRATION_2_3)
+                    .addCallback(bundledBusyTimeoutCallback)
+                    .build()
+            }
+            var db = buildCatalog()
+            com.quotebrowser.app.StartupWatchdog.mark(
+                "db open built: $dbName " +
                     "(${(android.os.SystemClock.elapsedRealtime() - openT0)}ms)"
             )
-        } catch (e: IllegalStateException) {
-            if (e.message?.contains("Pre-packaged database has an invalid schema") == true) {
-                Log.w("QuoteBrowser", "bundled db $dbName failed validation, re-healing", e)
+            try {
+                db.openHelper.writableDatabase
+                com.quotebrowser.app.StartupWatchdog.mark(
+                    "db open validated: $dbName " +
+                        "(${(android.os.SystemClock.elapsedRealtime() - openT0)}ms)"
+                )
+            } catch (e: IllegalStateException) {
+                // Re-heal (clearing stale WAL/SHM first) and rebuild
+                // once, serialized with the merge on the per-database
+                // lock. If the retry also fails, the real error
+                // propagates — no asset rebuild exists anymore.
+                Log.w("QuoteBrowser", "catalog db $dbName failed to open, re-healing", e)
                 try { db.close() } catch (_: Exception) {}
-                // Clear stale WAL/SHM that can pin the old schema view.
                 try {
-                    val f = appContext.getDatabasePath(dbName)
-                    File(f.absolutePath + "-wal").delete()
-                    File(f.absolutePath + "-shm").delete()
+                    File(deviceFile.absolutePath + "-wal").delete()
+                    File(deviceFile.absolutePath + "-shm").delete()
                 } catch (_: Exception) {}
-                // v1.88.10: serialize the whole re-heal + rebuild
-                // with the refresh merge on the per-database
-                // lock — the merge can otherwise be mid-write
-                // on this file while the rebuild deletes it.
-                // (synchronized is reentrant, and
-                // ensureBundledSchemaHealed takes the same
-                // lock internally.)
-                synchronized(bundledDbLock(dbName.removePrefix("bundled_"))) {
+                synchronized(bundledDbLock(fileName)) {
                     ensureBundledSchemaHealed(dbName)
-                    db = buildBundled()
-                    try {
-                        db.openHelper.writableDatabase
-                    } catch (e2: IllegalStateException) {
-                        if (e2.message?.contains("Pre-packaged database has an invalid schema") == true) {
-                            // v1.88.10: the stale file resists healing
-                            // (seen 2026-09-20: a version-0 leftover
-                            // copy from the v1.88.x era whose schema
-                            // still lacks `status` after 8 heal
-                            // attempts — corrupt or otherwise
-                            // unhealable via ALTER). The APK asset is
-                            // verified good, so back the stale file
-                            // up, delete it, re-copy from the asset,
-                            // and restore the user's tables from the
-                            // backup. Last resort for an unhealable
-                            // stale copy; the packaged asset is
-                            // verified good.
-                            Log.w("QuoteBrowser", "bundled db $dbName unhealable, rebuilding from asset", e2)
-                            try { db.close() } catch (_: Exception) {}
-                            db = rebuildBundledFromAsset(dbName, assetPath)
-                        } else {
-                            throw e2
-                        }
-                    }
+                    db = buildCatalog()
+                    db.openHelper.writableDatabase
                 }
-            } else {
-                throw e
             }
-        }
-        val openMs = android.os.SystemClock.elapsedRealtime() - openT0
-        com.quotebrowser.app.StartupWatchdog.mark("db open end: $dbName (${openMs}ms)")
-        return db
+            val openMs = android.os.SystemClock.elapsedRealtime() - openT0
+            com.quotebrowser.app.StartupWatchdog.mark("db open end: $dbName (${openMs}ms)")
+            return db
         } catch (t: Throwable) {
             val openMs = android.os.SystemClock.elapsedRealtime() - openT0
             com.quotebrowser.app.StartupWatchdog.mark("db open FAILED: $dbName (${openMs}ms) ${t.javaClass.simpleName}")
             throw t
         }
     }
+
 
     fun switchDatabase(id: String) {
         prefs.edit().putString(KEY_CURRENT_DB, id).apply()

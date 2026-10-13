@@ -242,12 +242,12 @@ private suspend fun verifyOneDatabase(
             }
         }
 
-        // --- Sanity: bundled databases must be non-empty ---
+        // --- Sanity: catalog databases must be non-empty ---
         if (quoteCount == 0L && id.startsWith("asset:")) {
             check(
                 "Quote count", VerifyStatus.NEEDS_ATTENTION,
-                "This bundled database contains no quotes — its data may " +
-                    "have been lost. Reinstalling the app restores it."
+                "This database contains no quotes — its data may " +
+                    "have been lost. Re-download it in Settings → Databases."
             )
         } else {
             check(

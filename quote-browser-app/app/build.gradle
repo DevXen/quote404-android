@@ -12,8 +12,8 @@ android {
         applicationId = "com.quotebrowser.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 175
-        versionName = "1.88.40"
+        versionCode = 176
+        versionName = "1.89.0"
     }
 
     buildTypes {

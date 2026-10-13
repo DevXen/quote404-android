@@ -149,6 +149,8 @@ import com.quotebrowser.app.ui.screens.BlockedWordsScreen
 import com.quotebrowser.app.ui.screens.CategoriesScreen
 import com.quotebrowser.app.ui.screens.DailyChallengeScreen
 import com.quotebrowser.app.ui.screens.DatabaseOrderScreen
+import com.quotebrowser.app.ui.screens.DatabaseSetupScreen
+import com.quotebrowser.app.ui.screens.DatabasesScreen
 import com.quotebrowser.app.ui.screens.DeckScreen
 import com.quotebrowser.app.ui.screens.DetailScreen
 import com.quotebrowser.app.ui.screens.DuplicateScreen
@@ -286,6 +288,8 @@ private object Routes {
     // v1.88.36: user-created databases ("My Databases").
     const val USER_DBS = "user_dbs"
     const val USER_DB_QUOTES = "userdb_quotes/{dbId}"
+    // v1.89: downloadable-database manager (Settings → Databases).
+    const val DATABASES = "databases_manager"
     fun detail(number: Int) = "detail/$number"
     fun userDbQuotes(dbId: String) = "userdb_quotes/$dbId"
     /** Nick deep-dive route, e.g. from tapping a nick. */
@@ -658,6 +662,23 @@ fun AppNav(
         importMessage?.let { message ->
             scope.launch { snackbarHostState.showSnackbar(message) }
             mainVm.consumeImportMessage()
+        }
+    }
+
+    // v1.89: first-run database setup gate. When no catalog database is
+    // installed and the user hasn't skipped setup, a full-screen overlay
+    // (end of this composable) offers the downloads before the main UI.
+    // Initial value only: installing or skipping dismisses it for the
+    // session; the persisted skip pref + installed files gate the next
+    // launch.
+    var showDbSetup by remember { mutableStateOf(manager.needsDatabaseSetup()) }
+    // Set by the setup screen's "I have my own chat files / databases"
+    // action: hide the overlay, then land on the Databases manager.
+    var pendingOpenDatabases by remember { mutableStateOf(false) }
+    LaunchedEffect(pendingOpenDatabases, showDbSetup) {
+        if (pendingOpenDatabases && !showDbSetup) {
+            pendingOpenDatabases = false
+            navController.navigate(Routes.DATABASES) { launchSingleTop = true }
         }
     }
 
@@ -1625,6 +1646,8 @@ fun AppNav(
                     onMyQuotesClick = { navController.navigate(Routes.MY_QUOTES) },
                     // v1.88.36: user-created databases ("My Databases").
                     onMyDatabasesClick = { navController.navigate(Routes.USER_DBS) },
+                    // v1.89: downloadable-database manager.
+                    onDatabasesClick = { navController.navigate(Routes.DATABASES) },
                     onStatsClick = { navController.navigate(Routes.STATS) },
                     onDbOrderClick = { navController.navigate(Routes.DB_ORDER) },
                     onDuplicatesClick = { navController.navigate(Routes.DUPLICATES) },
@@ -2085,6 +2108,16 @@ fun AppNav(
                     onBack = { navController.popBackStack() }
                 )
             }
+            // v1.89: downloadable-database manager (download / installed /
+            // your own databases). "My databases" routes on to the
+            // existing user-databases screen.
+            composable(Routes.DATABASES) {
+                DatabasesScreen(
+                    manager = manager,
+                    onMyDatabasesClick = { navController.navigate(Routes.USER_DBS) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable(
                 route = Routes.USER_DB_QUOTES,
                 arguments = listOf(navArgument("dbId") { type = NavType.StringType })
@@ -2199,6 +2232,21 @@ fun AppNav(
             selected = randomSourceIds,
             onConfirm = { randomVm.updateSources(it) },
             onDismiss = { showRandomSources = false }
+        )
+    }
+
+    // v1.89: first-run database setup, drawn over the main UI (which
+    // stays harmless underneath: with zero installed catalog databases
+    // every surface resolves to My Quotes / empty states).
+    if (showDbSetup) {
+        DatabaseSetupScreen(
+            manager = manager,
+            onFinished = { showDbSetup = false },
+            onOpenOwnDatabases = {
+                manager.setDbSetupSkipped()
+                showDbSetup = false
+                pendingOpenDatabases = true
+            }
         )
     }
 }

@@ -414,13 +414,26 @@ val ThemePresets = listOf(
         onBackground = 0xFF9A9A9A, onSurface = 0xFF9A9A9A, number = 0xFF4AA3FF,
         quoteBackground = 0xFF141414
     ),
-    // v1.88.38: "Friends" — Clint's personal database of Jordyn & Tiffany
-    // banter. Sunset-hangout palette: deep plum night, hot pink + amber.
+    // v1.88.38: "Sunset Hangout" — deep plum night, hot pink + amber.
+    // Built for Clint's Friends database; v1.89.2: Clint liked it enough
+    // to keep it as a general preset (id stays "db_friends" so stored
+    // settings don't break), while the Friends database itself defaults
+    // to the new "Friends — Wall" theme below.
     ThemePreset(
-        "db_friends", "Friends", true,
+        "db_friends", "Sunset Hangout", true,
         background = 0xFF1E1033, surface = 0xFF2A1846, primary = 0xFFFF4D8D,
         onBackground = 0xFFFFF6EC, onSurface = 0xFFFFF6EC, number = 0xFFFFB020,
         divider = 0xFF4A3568, quoteBackground = 0xFF2A1846
+    ),
+    // v1.89.2: "Friends — Wall" — the Friends database's new default:
+    // nostalgic early-Facebook wall-post era (2010–2013). Classic
+    // Facebook blue #3B5998 over a pale blue-gray paper page, white
+    // cards, era body-text gray. Light theme.
+    ThemePreset(
+        "db_friends_wall", "Friends — Wall", false,
+        background = 0xFFECEFF5, surface = 0xFFFFFFFF, primary = 0xFF3B5998,
+        onBackground = 0xFF333333, onSurface = 0xFF333333, number = 0xFF365899,
+        divider = 0xFFD3D9E6, quoteBackground = 0xFFFFFFFF
     ),
     ThemePreset(
         "dark", "Dark", true,
@@ -609,12 +622,12 @@ fun themeGroups(): List<ThemeGroup> {
         group("System", "theme_bsod", "theme_macintosh", "theme_macos"),
         group(
             "Quote databases", "db_bashim", "bashorg", "db_burntelectrons",
-            "db_crapshack", "db_friends", "db_furcqdb", "db_irox", "db_qdb_mit",
+            "db_crapshack", "db_friends_wall", "db_furcqdb", "db_irox", "db_qdb_mit",
             "db_qdb_us", "db_quoteirc", "db_warpdrive", "db_wqdb", "db_xkcdb"
         ),
         group(
             "Dark", "amoled", "dark", "dracula", "forest", "midnight",
-            "nord", "solarized"
+            "nord", "solarized", "db_friends"
         ),
         group("Light", "light", "sunset")
     )

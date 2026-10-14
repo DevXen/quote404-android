@@ -3571,7 +3571,10 @@ fun QuoteCardStyleDialog(
                         dbId = dbId,
                         stripNicks = nickStripSet.contains(
                             style.noveltyCardThemeKey()
-                        )
+                        ),
+                        // v1.89.2: the Friends tile matches the quote's
+                        // database palette (sunset vs wall).
+                        structureThemeId = shareResolved?.structureThemeId
                     )
                     val old = noveltyTileBitmaps.put(style, bmp)
                     old?.recycle()
@@ -3790,6 +3793,10 @@ fun QuoteCardStyleDialog(
                                                     siteStyle.noveltyCardThemeKey()
                                                 ),
                                                 dbId = dbId,
+                                                // v1.89.2: dual-palette cards
+                                                // (Friends) match the screen.
+                                                structureThemeId =
+                                                    shareResolved?.structureThemeId,
                                             )
                                         } else {
                                             renderSiteQuoteCardForShare(
@@ -4656,7 +4663,13 @@ suspend fun renderSiteQuoteCardForShare(
      * v1.88.31: false skips the slim Quote404 logo plate so the image is
      * just the card; the header is always drawn on share/export images.
      */
-    includeHeader: Boolean = true
+    includeHeader: Boolean = true,
+    /**
+     * v1.89.2: the structure theme id the card resolved from, threaded to
+     * the novelty renderer so dual-palette cards (Friends sunset vs wall)
+     * match the on-screen card.
+     */
+    structureThemeId: String? = null
 ): Bitmap = withContext(Dispatchers.IO) {
     // v1.88.24: novelty themes render the real on-screen composables
     // off-screen to a bitmap — single source of truth, so the export is
@@ -4671,7 +4684,8 @@ suspend fun renderSiteQuoteCardForShare(
             locals = noveltyLocals?.copy(nickPalette = nickPalette)
                 ?: NoveltyExportLocals(nickPalette = nickPalette),
             dbId = null,
-            includeHeader = includeHeader
+            includeHeader = includeHeader,
+            structureThemeId = structureThemeId
         )
     }
     // v1.61.15: Clint's Quote404 logo for the top branding plate.

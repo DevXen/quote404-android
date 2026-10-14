@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.quotebrowser.app.data.DisplayPrefs
 import com.quotebrowser.app.data.Quote
 import com.quotebrowser.app.data.SiteStyle
+import com.quotebrowser.app.data.resolveDbTheme
 import com.quotebrowser.app.ui.LocalNickPalette
 import com.quotebrowser.app.ui.LocalQuoteBackground
 import com.quotebrowser.app.ui.LocalQuoteClean
@@ -86,7 +87,13 @@ fun NoveltyThemeCard(
     quoteBackground: Color,
     headerActions: @Composable RowScope.() -> Unit,
     dbId: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /**
+     * v1.89.2: the structure theme id the card was resolved from, when
+     * the caller knows it (exports thread it explicitly; on screen the
+     * Friends palette resolves from the theme snapshots + [dbId]).
+     */
+    structureThemeId: String? = null
 ) {
     // v1.88.32: "remove nicks from message text" for the chat themes. The
     // export path provides LocalNoveltyStripNicks explicitly (its
@@ -124,7 +131,11 @@ fun NoveltyThemeCard(
         SiteStyle.ICQ -> IcqCard(quote, showNumber, showRating, headerActions, modifier, stripNicks)
         SiteStyle.MSN_MESSENGER -> MsnCard(quote, showNumber, showRating, headerActions, modifier, stripNicks)
         // v1.88.38: Clint's personal Friends database theme.
-        SiteStyle.FRIENDS -> FriendsCard(quote, showNumber, showRating, headerActions, modifier)
+        // v1.89.2: two palettes — Sunset Hangout and Friends — Wall.
+        SiteStyle.FRIENDS -> FriendsCard(
+            quote, showNumber, showRating, headerActions, modifier,
+            wall = friendsWallPalette(structureThemeId, dbId)
+        )
         else -> {
             // Unreachable: SiteQuoteCard only routes novelty styles here.
         }
@@ -1570,11 +1581,32 @@ private fun AimCard(
 
 // ---------------------------------------------------------------------------
 // FRIENDS — v1.88.38: Clint's personal database (Jordyn & Tiffany banter).
-// Sunset-hangout chat: deep plum card with an amber top strip, right-
-// aligned sunset-gradient bubbles for <Me>/<Clint>, left-aligned plum
-// bubbles with an amber nick label for everyone else, centered mauve
-// italic status lines for narration/action turns.
+// Chat bubbles: right-aligned gradient bubbles for <Me>/<Clint>, left-
+// aligned bubbles with a nick label for everyone else, centered italic
+// status lines for narration/action turns.
+// v1.89.2: two palettes over the same layout — "Sunset Hangout" (deep
+// plum card, sunset-gradient outgoing bubbles, amber labels) and
+// "Friends — Wall" (white card, classic-Facebook-blue gradient outgoing
+// bubbles, pale blue-gray incoming bubbles), the database's new default.
 // ---------------------------------------------------------------------------
+
+/**
+ * v1.89.2: which FriendsCard palette to paint. The explicit structure
+ * theme id wins (exports thread it so the bitmap matches the screen);
+ * otherwise the per-database theme resolution decides; with no signal
+ * at all, Friends databases get their wall default and anything else
+ * keeps the original sunset novelty look.
+ */
+@Composable
+private fun friendsWallPalette(structureThemeId: String?, dbId: String?): Boolean {
+    if (structureThemeId != null) return structureThemeId == "db_friends_wall"
+    if (dbId != null) {
+        val resolved = resolveDbTheme(LocalDbThemeSnapshots.current, dbId)
+        resolved.structureThemeId?.let { return it == "db_friends_wall" }
+        return dbId == "Friends" || dbId == "asset:friends.db"
+    }
+    return true
+}
 
 // Safety split for un-normalized Friends text: the normalized database
 // stores one turn per line, but older/imported copies can hold a whole
@@ -1606,39 +1638,57 @@ private fun FriendsCard(
     showNumber: Boolean,
     showRating: Boolean,
     headerActions: @Composable RowScope.() -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    // v1.89.2: false = Sunset Hangout (the original), true = Wall.
+    wall: Boolean = false
 ) {
     val turns = friendsTurns(quote)
-    val cardBg = Color(0xFF241640)
-    val amber = Color(0xFFFFB020)
-    val pink = Color(0xFFFF4D8D)
-    val cream = Color(0xFFFFF6EC)
-    val mauve = Color(0xFFB9A8D9)
-    val incomingBubble = Color(0xFF3A2A5C)
-    val outgoingGradient = Brush.horizontalGradient(
-        colors = listOf(pink, Color(0xFFFF7A3D), amber)
-    )
+    // v1.89.2: one layout, two palettes (see the section header above).
+    val cardBg = if (wall) Color(0xFFFFFFFF) else Color(0xFF241640)
+    // Top strip, header text, and incoming nick labels.
+    val accent = if (wall) Color(0xFF3B5998) else Color(0xFFFFB020)
+    // Incoming bubble text.
+    val bodyText = if (wall) Color(0xFF333333) else Color(0xFFFFF6EC)
+    // Narration lines and the rating.
+    val statusColor = if (wall) Color(0xFF6D84B4) else Color(0xFFB9A8D9)
+    val incomingBubble = if (wall) Color(0xFFE7EBF2) else Color(0xFF3A2A5C)
+    // Mid-gradient color, also the quote-background local for nick spans.
+    val outgoingMid = if (wall) Color(0xFF2B5EA7) else Color(0xFFFF7A3D)
+    val outgoingGradient = if (wall) {
+        // Classic Facebook blue gradient for Clint's own lines.
+        Brush.horizontalGradient(
+            colors = listOf(Color(0xFF1877F2), Color(0xFF3B5998))
+        )
+    } else {
+        Brush.horizontalGradient(
+            colors = listOf(
+                Color(0xFFFF4D8D), Color(0xFFFF7A3D), Color(0xFFFFB020)
+            )
+        )
+    }
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg)
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        // v1.89.2: the white wall card needs a hairline edge on light pages.
+        border = if (wall) BorderStroke(1.dp, Color(0xFFD3D9E6)) else null
     ) {
         Column {
-            // Amber top accent strip.
+            // Accent top strip (amber for sunset, Facebook blue for wall).
             Box(
                 Modifier
                     .fillMaxWidth()
                     .height(3.dp)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .background(amber)
+                    .background(accent)
             )
             Column(Modifier.padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    noveltyActionRow(tint = amber, headerActions = headerActions) {
+                    noveltyActionRow(tint = accent, headerActions = headerActions) {
                         Text(
                             text = if (showNumber) "✦ Friends · #${quote.number}"
                             else "✦ Friends",
-                            style = noveltyPlainStyle(amber, 15).copy(
+                            style = noveltyPlainStyle(accent, 15).copy(
                                 fontWeight = FontWeight.Bold
                             )
                         )
@@ -1650,8 +1700,9 @@ private fun FriendsCard(
                         val nick = noveltyTurnNick(turn)
                         val isStatus = turn.trimStart().startsWith("*") || nick == null
                         if (isStatus) {
-                            // Narration / action line: centered, muted mauve italic.
-                            val statusStyle = noveltyPlainStyle(mauve, 13).copy(
+                            // Narration / action line: centered, muted italic
+                            // (mauve for sunset, steel blue for wall).
+                            val statusStyle = noveltyPlainStyle(statusColor, 13).copy(
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 textAlign = TextAlign.Center
                             )
@@ -1671,9 +1722,11 @@ private fun FriendsCard(
                                 else Arrangement.Start
                             ) {
                                 if (mine) {
-                                    // Outgoing: sunset gradient bubble, white text.
+                                    // Outgoing: gradient bubble, white text
+                                    // (sunset gradient, or Facebook blue
+                                    // for the wall palette).
                                     CompositionLocalProvider(
-                                        LocalQuoteBackground provides Color(0xFFFF7A3D)
+                                        LocalQuoteBackground provides outgoingMid
                                     ) {
                                         val annotated = rememberNickAnnotatedText(
                                             body, noveltyPlainStyle(Color.White)
@@ -1689,11 +1742,13 @@ private fun FriendsCard(
                                         )
                                     }
                                 } else {
-                                    // Incoming: amber nick label above a plum bubble.
+                                    // Incoming: accent nick label above the
+                                    // bubble (plum for sunset, pale blue-
+                                    // gray for wall).
                                     Column(Modifier.fillMaxWidth(0.85f)) {
                                         Text(
                                             text = nick.orEmpty(),
-                                            style = noveltyPlainStyle(amber, 12).copy(
+                                            style = noveltyPlainStyle(accent, 12).copy(
                                                 fontWeight = FontWeight.Bold
                                             )
                                         )
@@ -1702,11 +1757,11 @@ private fun FriendsCard(
                                             LocalQuoteBackground provides incomingBubble
                                         ) {
                                             val annotated = rememberNickAnnotatedText(
-                                                body, noveltyPlainStyle(cream)
+                                                body, noveltyPlainStyle(bodyText)
                                             )
                                             Text(
                                                 text = annotated,
-                                                style = noveltyPlainStyle(cream),
+                                                style = noveltyPlainStyle(bodyText),
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .clip(RoundedCornerShape(18.dp))
@@ -1724,7 +1779,7 @@ private fun FriendsCard(
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = "${quote.rating}",
-                        style = MaterialTheme.typography.labelSmall.copy(color = mauve)
+                        style = MaterialTheme.typography.labelSmall.copy(color = statusColor)
                     )
                 }
             }

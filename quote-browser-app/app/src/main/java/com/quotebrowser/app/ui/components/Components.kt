@@ -3772,7 +3772,14 @@ fun dbAccentColor(snap: DbThemeSnapshots, dbId: String?): androidx.compose.ui.gr
     if (dbId == null || dbId == DatabaseManager.ALL_DBS_ID) return null
     val resolved = resolveDbTheme(snap, dbId)
     if (resolved.bypassed) return null
-    return siteBarColor(siteStyleFor(resolved.structureThemeId))
+    val style = siteStyleFor(resolved.structureThemeId)
+    // v1.89.2: Friends has two palettes — Sunset Hangout keeps its deep
+    // plum accent; the wall default uses classic Facebook blue (which is
+    // also siteBarColor's FRIENDS value).
+    if (style == SiteStyle.FRIENDS && resolved.structureThemeId == "db_friends") {
+        return androidx.compose.ui.graphics.Color(0xFF1E1033)
+    }
+    return siteBarColor(style)
 }
 
 /**

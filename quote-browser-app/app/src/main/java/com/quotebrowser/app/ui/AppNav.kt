@@ -1513,7 +1513,13 @@ fun AppNav(
                 LaunchedEffect(voiceOnlyArg) {
                     if (voiceOnlyArg) searchVm.updateVoiceOnly(true)
                 }
-                SearchScreen(vm = searchVm, catVm = catVm, manager = manager, onQuoteClick = { number -> openQuote(manager.currentDbId.value, number) }, onSourcedQuoteClick = { dbId, number -> openQuote(dbId, number) }, showNumber = showNumber, showRating = showRating, basket = basket, onToggleBasket = ::onToggleBasket, onAddToPlaylist = { playlistVm.append(it) }, onReadAloudQuote = { playlistVm.start(listOf(it)) }, onNickClick = { nick -> navController.navigate(Routes.nickDetail(nick)) }, quoteListStore = quoteListStore, searchHistory = searchHistory)
+                SearchScreen(vm = searchVm, catVm = catVm, manager = manager, onQuoteClick = { number -> openQuote(manager.currentDbId.value, number) }, onSourcedQuoteClick = { dbId, number -> openQuote(dbId, number) }, showNumber = showNumber, showRating = showRating, basket = basket, onToggleBasket = ::onToggleBasket, onAddToPlaylist = { playlistVm.append(it) }, onReadAloudQuote = { playlistVm.start(listOf(it)) }, onNickClick = { nick -> navController.navigate(Routes.nickDetail(nick)) }, quoteListStore = quoteListStore, searchHistory = searchHistory, onExportSearchResults = {
+                    // v1.89.2: the Search screen already captured the full
+                    // result set into the manager; open Export on its scope.
+                    exportInitialScope = ExportScope.SEARCH
+                    exportInitialFormat = ExportFormat.TXT
+                    navController.navigate(Routes.EXPORT)
+                })
             }
             composable(
                 route = Routes.NICK_PATTERN,

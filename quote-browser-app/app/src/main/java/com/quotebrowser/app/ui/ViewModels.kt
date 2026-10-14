@@ -995,6 +995,20 @@ class MainViewModel(private val manager: DatabaseManager) : ViewModel() {
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    /** v1.89.2: search-results export capture (stashed by the Search screen). */
+    val searchExportCount: StateFlow<Int> = manager.searchExportEntries
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    /** The captured search's display title ("Search - <query>"). */
+    val searchExportTitle: StateFlow<String> = manager.searchExportTitle
+
+    /** Resolves the captured search results for export, in result order. */
+    suspend fun searchExportQuotes(): List<SourcedQuote> =
+        manager.searchExportQuotes().filter { sq ->
+            !manager.isQuoteHiddenFromLists(sq.dbId, sq.quote.number, sq.quote.text)
+        }
+
     fun toggleBasket(dbId: String, number: Int) = manager.toggleBasket(dbId, number)
 
     /**
@@ -1804,6 +1818,81 @@ class SearchViewModel(manager: DatabaseManager) : QuoteListViewModel(manager) {
             }
         }
         .cachedIn(viewModelScope)
+
+    /**
+     * v1.89.2: captures the FULL current result set — every quote
+     * matching the active query, filters, and database scope, in the
+     * on-screen order (not just the paged window) — as lightweight
+     * (dbId, number) entries handed to the Export screen's Search scope.
+     * Returns the number captured.
+     */
+    suspend fun captureSearchResultsForExport(): Int =
+        withContext(Dispatchers.IO) {
+            val entries: List<BasketEntry> = when {
+                notesScope ->
+                    noteResults.value.map { BasketEntry(it.dbId, it.quote.number) }
+                effectiveSearchDbIds.value != null ->
+                    allDbResults.value.map { BasketEntry(it.dbId, it.quote.number) }
+                else -> captureSingleDbResults()
+            }
+            val title = if (query.isBlank()) "Search results"
+            else "Search - ${query.trim()}"
+            manager.setSearchExport(entries, title)
+            entries.size
+        }
+
+    /**
+     * v1.89.2: the single-database capture — the list twin of the paging
+     * pipeline above: same SQL (via the repository's non-paging search /
+     * browse) and the same Kotlin-side post-filters (regex pattern,
+     * length, voice, explanation, hidden / content filter).
+     */
+    private suspend fun captureSingleDbResults(): List<BasketEntry> {
+        val dbId = manager.currentDbId.value
+        val repo = manager.repoFor(dbId)
+        val q = query
+        val regex = compiledRegex()
+        // Regex mode with an uncompilable pattern shows nothing on screen.
+        if (useRegex && q.isNotBlank() && regex == null) return emptyList()
+        val maturities = effectiveMaturities(maturity, manager.maturityCeiling.value)
+        val statusMode = manager.statusModeFor(repo.dbId)
+        var quotes: List<Quote> = when {
+            q.isBlank() -> {
+                if (!voiceOnly && !filterBrowse) emptyList()
+                else repo.browseAll(
+                    sortOrder, minRating, categoryIds, statusMode,
+                    maturities, castSize, excludedCategoryIds
+                )
+            }
+            regex != null -> repo.searchAll(
+                q, categoryIds, minRating, sortOrder, statusMode,
+                maturities, castSize, excludedCategoryIds,
+                excludedMaturities, excludedCasts, useRegex = true
+            )
+            else -> repo.searchAll(
+                q, categoryIds, minRating, sortOrder, statusMode,
+                maturities, castSize, excludedCategoryIds,
+                excludedMaturities, excludedCasts
+            )
+        }
+        if (regex != null) {
+            quotes = quotes.filter { regex.containsMatchIn(it.text) }
+        }
+        val show = _showFiltered.value
+        return quotes.filter { quote ->
+            lengthFilterOk(
+                quote.text, lengthMode, minLength, maxLength,
+                manager.lengthLongerWords.value,
+                manager.lengthShorterWords.value,
+                manager.qcNormalizeBreaks.value
+            ) &&
+                (!voiceOnly || VoiceRecordings.hasRecording(dbId, quote.number)) &&
+                (!explanationOnly ||
+                    ExplanationCache.hasExplanation(dbId, quote.number)) &&
+                !manager.isQuoteHiddenOrMuted(dbId, quote.number, quote.text) &&
+                (show || !manager.isHiddenByContentFilter(quote.text))
+        }.map { BasketEntry(dbId, it.number) }
+    }
 
     companion object {
         /** Cap on merged all-databases search results. */

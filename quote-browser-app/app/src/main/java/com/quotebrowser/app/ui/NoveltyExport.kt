@@ -106,8 +106,10 @@ fun noveltyTileSwatch(style: SiteStyle): Triple<Long, Long, String> = when (styl
     SiteStyle.AIM -> Triple(0xFF1E4E79, 0xFFE60000, "Ag")
     SiteStyle.ICQ -> Triple(0xFFCDE8F7, 0xFF0066CC, "Ag")
     SiteStyle.MSN_MESSENGER -> Triple(0xFF0B7DDA, 0xFFFFFFFF, "Ag")
-    // v1.88.38: Friends — deep plum tile, hot pink glyph.
-    SiteStyle.FRIENDS -> Triple(0xFF1E1033, 0xFFFF4D8D, "✦")
+    // v1.88.38: Friends — white wall card, classic Facebook blue glyph.
+    // (The Sunset Hangout palette stays on the FriendsCard itself when
+    // that preset is the resolved structure theme.)
+    SiteStyle.FRIENDS -> Triple(0xFF3B5998, 0xFFFFFFFF, "✦")
     else -> Triple(0xFF222222, 0xFFFFFFFF, "Ag")
 }
 
@@ -182,7 +184,13 @@ suspend fun renderNoveltyQuoteCard(
      * v1.88.32: "remove nicks from message text" for the AIM/ICQ/MSN chat
      * themes — strips the redundant speaker prefix from each turn's body.
      */
-    stripNicks: Boolean = false
+    stripNicks: Boolean = false,
+    /**
+     * v1.89.2: the structure theme id the card resolved from on screen,
+     * threaded so dual-palette cards (Friends sunset vs wall) render the
+     * same palette in the export as on screen.
+     */
+    structureThemeId: String? = null
 ): Bitmap {
     require(siteStyle.isNoveltyTheme()) { "Not a novelty theme: $siteStyle" }
     val watermark = if (includeHeader) quote404WatermarkLogo(context) else null
@@ -194,7 +202,8 @@ suspend fun renderNoveltyQuoteCard(
         colorizeNicks = colorizeNicks,
         locals = locals,
         dbId = dbId,
-        stripNicks = stripNicks
+        stripNicks = stripNicks,
+        structureThemeId = structureThemeId
     )
     try {
         // Same slim logo plate geometry as the site-card exports
@@ -261,7 +270,9 @@ suspend fun renderNoveltyCardBitmap(
     locals: NoveltyExportLocals = NoveltyExportLocals(),
     dbId: String? = null,
     /** v1.88.32: "remove nicks from message text" for the chat themes. */
-    stripNicks: Boolean = false
+    stripNicks: Boolean = false,
+    /** v1.89.2: see renderNoveltyQuoteCard's structureThemeId. */
+    structureThemeId: String? = null
 ): Bitmap {
     require(siteStyle.isNoveltyTheme()) { "Not a novelty theme: $siteStyle" }
     val activity = context.findActivity()
@@ -271,7 +282,8 @@ suspend fun renderNoveltyCardBitmap(
             activity, quote, siteStyle,
             includeNumber, includeRating, colorizeNicks, locals, dbId,
             stripNicks,
-            widthPx = widthPx
+            widthPx = widthPx,
+            structureThemeId = structureThemeId
         )
     }
 }
@@ -293,7 +305,9 @@ private suspend fun captureNoveltyCard(
     locals: NoveltyExportLocals,
     dbId: String?,
     stripNicks: Boolean,
-    widthPx: Int
+    widthPx: Int,
+    // v1.89.2: see renderNoveltyQuoteCard's structureThemeId.
+    structureThemeId: String? = null
 ): Bitmap = withContext(Dispatchers.Main) {
     val composeView = ComposeView(activity).apply {
         visibility = View.INVISIBLE
@@ -322,12 +336,14 @@ private suspend fun captureNoveltyCard(
                 if (palette != null) {
                     CompositionLocalProvider(LocalNickPalette provides palette) {
                         NoveltyCardExportContent(
-                            siteStyle, quote, includeNumber, includeRating, dbId
+                            siteStyle, quote, includeNumber, includeRating, dbId,
+                            structureThemeId
                         )
                     }
                 } else {
                     NoveltyCardExportContent(
-                        siteStyle, quote, includeNumber, includeRating, dbId
+                        siteStyle, quote, includeNumber, includeRating, dbId,
+                        structureThemeId
                     )
                 }
             }
@@ -370,7 +386,9 @@ private fun NoveltyCardExportContent(
     quote: Quote,
     includeNumber: Boolean,
     includeRating: Boolean,
-    dbId: String?
+    dbId: String?,
+    // v1.89.2: see renderNoveltyQuoteCard's structureThemeId.
+    structureThemeId: String? = null
 ) {
     NoveltyThemeCard(
         style = siteStyle,
@@ -380,6 +398,7 @@ private fun NoveltyCardExportContent(
         quoteBackground = Color.Transparent,
         // No header actions in an export — they're interactive chrome.
         headerActions = {},
-        dbId = dbId
+        dbId = dbId,
+        structureThemeId = structureThemeId
     )
 }

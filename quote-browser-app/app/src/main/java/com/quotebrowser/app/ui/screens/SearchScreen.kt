@@ -47,6 +47,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
@@ -57,6 +58,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,6 +104,7 @@ import com.quotebrowser.app.ui.components.VoiceSearchButton
 import com.quotebrowser.app.ui.components.SelectedQuote
 import com.quotebrowser.app.ui.components.rememberQuoteSelection
 import com.quotebrowser.app.ui.rememberCappedFlingBehavior
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -120,7 +123,9 @@ fun SearchScreen(vm: SearchViewModel, catVm: CategoryViewModel, manager: Databas
     /** v1.66: user quote lists — enables the sheet's "Add to list…" row. */
     quoteListStore: QuoteListStore? = null,
     /** v1.72: hoisted to AppNav so the global search row shares the store. */
-    searchHistory: SearchHistory
+    searchHistory: SearchHistory,
+    /** v1.89.2: after the full result set is captured for export. */
+    onExportSearchResults: () -> Unit = {}
 ) {
     val pagingItems = vm.results.collectAsLazyPagingItems()
     val favNumbers by vm.favoriteNumbers.collectAsStateWithLifecycle()
@@ -445,6 +450,61 @@ fun SearchScreen(vm: SearchViewModel, catVm: CategoryViewModel, manager: Databas
                 onShow = { vm.setShowFiltered(true) },
                 onHide = { vm.setShowFiltered(false) }
             )
+        }
+
+        // v1.89.2: export the FULL current result set (every match, not
+        // just the pages scrolled into view) via the Export screen's
+        // Search scope — all formats and options apply. The count is
+        // shown where the result set is a plain list (multi-database and
+        // notes scopes); the paged path knows its full count only after
+        // the capture runs.
+        val exportCount: Int? = when {
+            vm.notesScope -> noteResults.size
+            scopeIds != null -> allResults.size
+            else -> null
+        }
+        val hasExportResults = when {
+            vm.notesScope -> noteResults.isNotEmpty()
+            scopeIds != null -> allResults.isNotEmpty()
+            vm.query.isBlank() && !vm.filterBrowse -> false
+            else -> pagingItems.itemCount > 0
+        }
+        var capturingExport by remember { mutableStateOf(false) }
+        val exportScope = rememberCoroutineScope()
+        if (hasExportResults) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        capturingExport = true
+                        exportScope.launch {
+                            val n = try {
+                                vm.captureSearchResultsForExport()
+                            } catch (e: Exception) {
+                                0
+                            }
+                            capturingExport = false
+                            if (n > 0) onExportSearchResults()
+                            else toast("No results to export")
+                        }
+                    },
+                    enabled = !capturingExport
+                ) {
+                    if (capturingExport) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+                    Text(
+                        "Export results" +
+                            (exportCount?.let { " ($it)" } ?: "")
+                    )
+                }
+            }
         }
 
         // v1.66: filter browsing (mood buttons) shows results with a blank

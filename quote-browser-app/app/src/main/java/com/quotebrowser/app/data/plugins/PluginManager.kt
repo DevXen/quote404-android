@@ -119,7 +119,9 @@ object PluginManager {
         "db_quoteirc", "db_burntelectrons", "db_warpdrive", "db_wqdb",
         "db_xkcdb", "db_furcqdb", "db_irox",
         // v1.88.38: Clint's personal Friends database theme.
-        "db_friends"
+        "db_friends",
+        // v1.89.2: the Friends "Wall" default theme (same structure).
+        "db_friends_wall"
     )
 
     data class PluginManifest(

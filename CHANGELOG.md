@@ -7,6 +7,26 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.2 — 2026-10-13 (versionCode 178)
+
+- **Export search results (Clint):** Search gains an "Export results"
+  button that captures the FULL matching set (every match in on-screen
+  order, not just the scrolled window) and opens Export on a new
+  "Search results" scope — every format and option works (TXT/JSON/XML/
+  CSV/PNG/PDF/EPUB/ANKI/MP4/M4A/HTML, one file or per-quote, strip
+  usernames, etc.). Exports are titled from the query ("Search - …").
+  Picking the scope manually with nothing captured shows an explanatory
+  empty state instead of exporting the wrong thing.
+- **Friends theme shuffle (Clint):** the "Sunset Hangout" palette
+  (formerly the Friends DB theme, id db_friends) is now a general
+  preset in the Themes screen (Dark group). The Friends database gets a
+  new default theme, "Friends — Wall" (db_friends_wall): a light,
+  nostalgic early-Facebook wall-post look (page #ECEFF5, white cards,
+  classic FB blue #3B5998), keeping the chat-bubble cards — Clint's
+  lines now ride a blue gradient. List, detail, share and exports all
+  render the active palette identically; a per-DB override back to
+  Sunset Hangout restores the plum/sunset card everywhere.
+
 ## v1.89.1 — 2026-10-13 (versionCode 177)
 
 - **Load .db files directly (Clint):** Settings → Databases and the

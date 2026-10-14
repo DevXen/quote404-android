@@ -204,7 +204,10 @@ enum class ExportScope(val label: String) {
     ALL("All quotes"),
     FAVORITES("Favorites only"),
     HISTORY("History only"),
-    BASKET("Export tray")
+    BASKET("Export tray"),
+    // v1.89.2: the result set captured by the Search screen's
+    // "Export results" action.
+    SEARCH("Search results")
 }
 
 enum class ExportMode(val label: String) {
@@ -251,6 +254,9 @@ fun ExportScreen(
     var stripUsernames by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
     val basketCount by vm.basketCount.collectAsStateWithLifecycle()
+    // v1.89.2: the Search screen's captured result set.
+    val searchExportCount by vm.searchExportCount.collectAsStateWithLifecycle()
+    val searchExportTitle by vm.searchExportTitle.collectAsStateWithLifecycle()
 
     val categories by catVm.categories.collectAsStateWithLifecycle()
     var selectedCats by remember { mutableStateOf(setOf<Long>()) }
@@ -278,8 +284,10 @@ fun ExportScreen(
             exporting = true
             resultMessage = null
             scope.launch {
-                val result = if (exportScope == ExportScope.BASKET) {
-                    performBasketExport(
+                val result = if (exportScope == ExportScope.BASKET ||
+                    exportScope == ExportScope.SEARCH
+                ) {
+                    performSourcedExport(
                         context, vm, uri, format, mode, narrate, videoBg, karaoke,
                         com.quotebrowser.app.ui.layouts.HtmlExportOptions(
                             includeUrl = htmlIncludeUrl,
@@ -289,7 +297,8 @@ fun ExportScreen(
                             includeBranding = htmlIncludeBranding
                         ),
                         exportStyleCss = exportStyleCss,
-                        stripUsernames = stripUsernames
+                        stripUsernames = stripUsernames,
+                        search = exportScope == ExportScope.SEARCH
                     )
                 } else {
                     performExport(
@@ -627,11 +636,45 @@ fun ExportScreen(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            if (s == ExportScope.BASKET) "Export tray ($basketCount)"
-                            else s.label
+                            when (s) {
+                                ExportScope.BASKET -> "Export tray ($basketCount)"
+                                // v1.89.2: the captured search result set.
+                                ExportScope.SEARCH ->
+                                    "Search results ($searchExportCount)"
+                                else -> s.label
+                            }
                         )
                     }
                 }
+            }
+        }
+
+        // v1.89.2: what the Search scope will export (or the empty state
+        // when no search has been captured yet).
+        if (exportScope == ExportScope.SEARCH) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                Text(
+                    text = if (searchExportCount == 0) {
+                        "No search results yet — run a search first, then " +
+                            "tap \"Export results\" on the Search screen."
+                    } else {
+                        "Will export $searchExportCount result" +
+                            (if (searchExportCount == 1) "" else "s") +
+                            " from \"$searchExportTitle\" — every match, " +
+                            "in the order the search showed them."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (searchExportCount == 0)
+                        MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
         }
 
@@ -748,16 +791,22 @@ fun ExportScreen(
                         sharingStrip = true
                         scope.launch {
                             try {
-                                val quotes = if (exportScope == ExportScope.BASKET) {
-                                    vm.basketQuotes().map { it.quote }
-                                } else {
-                                    val scopeStr = when (exportScope) {
-                                        ExportScope.ALL -> "all"
-                                        ExportScope.FAVORITES -> "favorites"
-                                        ExportScope.HISTORY -> "history"
-                                        ExportScope.BASKET -> "basket"
+                                val quotes = when (exportScope) {
+                                    ExportScope.BASKET ->
+                                        vm.basketQuotes().map { it.quote }
+                                    // v1.89.2: the captured search results.
+                                    ExportScope.SEARCH ->
+                                        vm.searchExportQuotes().map { it.quote }
+                                    else -> {
+                                        val scopeStr = when (exportScope) {
+                                            ExportScope.ALL -> "all"
+                                            ExportScope.FAVORITES -> "favorites"
+                                            ExportScope.HISTORY -> "history"
+                                            ExportScope.BASKET -> "basket"
+                                            ExportScope.SEARCH -> "search"
+                                        }
+                                        vm.getQuotesForExport(scopeStr, selectedFolder)
                                     }
-                                    vm.getQuotesForExport(scopeStr, selectedFolder)
                                 }
                                 renderAndShareQuoteStrip(context, quotes)
                             } finally {
@@ -782,7 +831,9 @@ fun ExportScreen(
         Button(
             onClick = { dirPicker.launch(null) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !exporting
+            // v1.89.2: Search scope with nothing captured exports nothing.
+            enabled = !exporting &&
+                !(exportScope == ExportScope.SEARCH && searchExportCount == 0)
         ) {
             if (exporting) {
                 CircularProgressIndicator(
@@ -1129,11 +1180,22 @@ private suspend fun performExport(
     stripUsernames: Boolean = false
 ): String = withContext(Dispatchers.IO) {
     try {
+        // v1.89.2: the Search scope is sourced (quotes can span several
+        // databases) — it never belongs in this current-database path,
+        // whose fallback would export every quote in the database.
+        if (scope == ExportScope.SEARCH) {
+            return@withContext performSourcedExport(
+                context, vm, treeUri, format, mode, narrate, background,
+                karaoke, htmlOptions, exportStyleCss, stripUsernames,
+                search = true
+            )
+        }
         val scopeStr = when (scope) {
             ExportScope.ALL -> "all"
             ExportScope.FAVORITES -> "favorites"
             ExportScope.HISTORY -> "history"
-            ExportScope.BASKET -> "basket" // handled by performBasketExport; never reached here
+            ExportScope.BASKET -> "basket" // handled by performSourcedExport; never reached here
+            ExportScope.SEARCH -> "search" // rerouted above; never reached here
         }
         val quotes = vm.getQuotesForExport(scopeStr, folder)
         if (quotes.isEmpty()) {
@@ -1348,8 +1410,13 @@ private suspend fun performExport(
     }
 }
 
-/** Exports the export-queue contents; quotes can come from several databases. */
-private suspend fun performBasketExport(
+/**
+ * Exports a sourced quote set (quotes can come from several databases):
+ * the export tray, or — v1.89.2, [search] — the Search screen's captured
+ * result set. The two differ only in where the quotes come from, the
+ * export title / file stem, and the wording of the result message.
+ */
+private suspend fun performSourcedExport(
     context: Context,
     vm: MainViewModel,
     treeUri: Uri,
@@ -1364,13 +1431,33 @@ private suspend fun performBasketExport(
     // v1.87: export-style plugin CSS layered over the layout CSS.
     exportStyleCss: String = "",
     // v1.88.34: strip chat-style username prefixes in TXT exports.
-    stripUsernames: Boolean = false
+    stripUsernames: Boolean = false,
+    // v1.89.2: true = the captured search results; false = the export tray.
+    search: Boolean = false
 ): String = withContext(Dispatchers.IO) {
     try {
-        val quotes = vm.basketQuotes()
+        val quotes = if (search) vm.searchExportQuotes() else vm.basketQuotes()
         if (quotes.isEmpty()) {
-            return@withContext "Export tray is empty."
+            return@withContext if (search) {
+                "No search results yet — run a search first."
+            } else {
+                "Export tray is empty."
+            }
         }
+        // v1.89.2: search exports are titled/stemmed from the query
+        // ("Search - <query>"); the tray keeps its historic names.
+        val title = if (search) {
+            vm.searchExportTitle.value.ifBlank { "Search results" }
+        } else {
+            "Quote Export"
+        }
+        val stem = if (search) {
+            "quotes_" + title.replace(Regex("[^A-Za-z0-9]+"), "_")
+                .trim('_').ifEmpty { "search" }
+        } else {
+            "quotes_basket"
+        }
+        val doneNoun = if (search) "search results" else "tray quotes"
         val labelFor: (String) -> String = { vm.labelForDb(it) }
 
         val resolver = context.contentResolver
@@ -1425,13 +1512,13 @@ private suspend fun performBasketExport(
                     context, vm.currentDbId.value, pluginLayouts
                 )
                 val html = com.quotebrowser.app.ui.layouts.renderQuotesPageHtml(
-                    "Quote Export", quotes.map { ctxFor(it) }, layout, htmlOptions,
+                    title, quotes.map { ctxFor(it) }, layout, htmlOptions,
                     textStyle,
                     // v1.87: export-style plugin CSS.
                     extraCss = exportStyleCss
                 )
                 val fileUri = DocumentsContract.createDocument(
-                    resolver, subfolderUri, "text/html", "quotes_basket.html"
+                    resolver, subfolderUri, "text/html", "$stem.html"
                 ) ?: return@withContext "Could not create output file."
                 resolver.openOutputStream(fileUri)?.use { out ->
                     out.write(html.toByteArray(Charsets.UTF_8))
@@ -1462,7 +1549,7 @@ private suspend fun performBasketExport(
             // v1.49: slideshow video for the export queue.
             if (format == ExportFormat.MP4) {
                 val ok = writeSlideshowToUri(
-                    context, resolver, subfolderUri, "quotes_basket.mp4",
+                    context, resolver, subfolderUri, "$stem.mp4",
                     quotes.map { SlideItem(it.quote, labelFor(it.dbId)) }, narrate,
                     background, karaoke
                 )
@@ -1475,7 +1562,7 @@ private suspend fun performBasketExport(
             if (format == ExportFormat.M4A) {
                 var reason: String? = null
                 val ok = writeAudioToUri(
-                    context, resolver, subfolderUri, "quotes_basket.m4a",
+                    context, resolver, subfolderUri, "$stem.m4a",
                     quotes.map { it.quote },
                     onError = { reason = it }
                 )
@@ -1483,11 +1570,11 @@ private suspend fun performBasketExport(
                 return@withContext if (ok) "Exported $count quotes to ${format.ext}/ folder as narrated audio."
                 else "Audio export failed: ${reason ?: "could not create output file."}"
             }
-            val binary = renderBinaryExport(format, quotes.map { it.quote }, "Quote Export")
+            val binary = renderBinaryExport(format, quotes.map { it.quote }, title)
             val fileUri = DocumentsContract.createDocument(
                 resolver, subfolderUri,
                 exportMimeFor(format),
-                "quotes_basket.${format.ext}"
+                "$stem.${format.ext}"
             ) ?: return@withContext "Could not create output file."
             resolver.openOutputStream(fileUri)?.use { out ->
                 if (binary != null) {
@@ -1504,7 +1591,7 @@ private suspend fun performBasketExport(
                         )
                     } else quotes
                     val content = when (format) {
-                        ExportFormat.TXT -> formatSourcedQuotesForExport(txtQuotes, "Quote Export", labelFor)
+                        ExportFormat.TXT -> formatSourcedQuotesForExport(txtQuotes, title, labelFor)
                         ExportFormat.JSON -> quotesToJson(quotes, labelFor)
                         ExportFormat.XML -> quotesToXml(quotes, labelFor)
                         ExportFormat.CSV -> quotesToCsv(quotes, labelFor)
@@ -1579,7 +1666,7 @@ private suspend fun performBasketExport(
         if (format == ExportFormat.M4A && count == 0 && audioReason != null) {
             "Audio export failed: $audioReason"
         } else {
-            "Exported $count tray quotes to ${format.ext}/ folder."
+            "Exported $count $doneNoun to ${format.ext}/ folder."
         }
     } catch (e: Exception) {
         "Export failed: ${e.message}"

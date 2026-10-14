@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.2", listOf(
+            "Export your search results: run a search (any filters, any databases) and tap \"Export results\" — it captures every match, not just what's on screen, and opens Export on the new \"Search results\" scope with all the usual formats and options (text, JSON, PDF, e-book, images, slideshow video, narrated audio, web page)",
+            "The Friends theme you liked is now a regular preset — find it as \"Sunset Hangout\" in the theme list and use it anywhere. The Friends database itself gets a new default theme, \"Friends — Wall\": the same chat bubbles in a nostalgic early-Facebook wall-post look — white cards, classic Facebook blue, your lines in blue bubbles. (Picked a different theme for Friends already? Yours stays.)"
+        )
+    ),
+    ChangelogEntry(
         "1.89.1", listOf(
             "Load .db files directly from the phone: Settings → Databases (and the first-run setup) has a \"Load a .db file\" button — pick a database file you've saved on the phone and, if its name matches one of the online databases, it installs as that database, no download needed (works offline too). Any other valid quote database is added as your own, just like importing before"
         )

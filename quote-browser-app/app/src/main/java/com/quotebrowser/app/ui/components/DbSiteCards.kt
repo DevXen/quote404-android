@@ -260,8 +260,9 @@ fun siteBarColor(style: SiteStyle): Color = when (style) {
     SiteStyle.AIM -> Color(0xFF0058E6) // AIM title-bar blue
     SiteStyle.ICQ -> Color(0xFF4A9EDE) // ICQ light blue
     SiteStyle.MSN_MESSENGER -> Color(0xFF0B7DDA) // MSN blue
-    // v1.88.38: Friends deep plum.
-    SiteStyle.FRIENDS -> Color(0xFF1E1033)
+    // v1.88.38: Friends. v1.89.2: the wall default's classic Facebook
+    // blue (dbAccentColor keeps the deep plum for Sunset Hangout).
+    SiteStyle.FRIENDS -> Color(0xFF3B5998)
     SiteStyle.MODERN_CARD -> Color.Transparent
 }
 

@@ -135,8 +135,11 @@ val DB_SITE_THEMES: Map<String, String> = mapOf(
     // import id ("Friends") and the bundled id ("asset:friends.db") map
     // here; resolveDbTheme falls back to this when the per-db themeId is
     // blank, so the Friends theme auto-applies either way.
-    "Friends" to "db_friends",
-    "asset:friends.db" to "db_friends"
+    // v1.89.2: the default is the new "Friends — Wall" theme; the old
+    // sunset theme stays available as the "Sunset Hangout" preset
+    // ("db_friends"), which users can still pick per-database here.
+    "Friends" to "db_friends_wall",
+    "asset:friends.db" to "db_friends_wall"
 )
 
 /** Theme ids that are database site themes (built-in, directly editable). */
@@ -313,7 +316,9 @@ enum class SiteStyle {
     BASH,
     /** Deep-blue header/footer bars, dark bordered body. */
     CRAPSHACK,
-    /** v1.88.38: Clint's Friends database — sunset chat bubbles on deep plum. */
+    /** v1.88.38: Clint's Friends database — chat bubbles. Two palettes:
+     * sunset on deep plum (db_friends, "Sunset Hangout") and, v1.89.2,
+     * the early-Facebook wall look (db_friends_wall, the DB default). */
     FRIENDS
 }
 
@@ -363,6 +368,10 @@ fun siteStyleFor(structureThemeId: String?): SiteStyle {
     "theme_msn_messenger" -> SiteStyle.MSN_MESSENGER
     // v1.88.38: Clint's personal Friends database theme.
     "db_friends" -> SiteStyle.FRIENDS
+    // v1.89.2: the Friends database's new "Wall" default — same chat-
+    // bubble presentation, wall-post palette (FriendsCard picks the
+    // palette from the structure theme id).
+    "db_friends_wall" -> SiteStyle.FRIENDS
     else -> SiteStyle.CLASSIC_QDB
     }
 }

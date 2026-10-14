@@ -649,6 +649,75 @@ class QuoteRepository(
     }
 
     /**
+     * v1.89.2: non-paging twin of [search] — every match, same WHERE
+     * construction and ORDER BY, for the search-results export capture.
+     * The Kotlin-side post-filters of the paging path (regex pattern,
+     * length, voice, explanation, hidden) are the caller's job.
+     */
+    suspend fun searchAll(
+        rawQuery: String,
+        categoryIds: Set<Long> = emptySet(),
+        minRating: Int? = null,
+        sort: SortOrder = SortOrder.NUMBER_DESC,
+        statusMode: StatusMode? = null,
+        maturities: List<MaturityLevel> = emptyList(),
+        cast: CastSize? = null,
+        excludedCategoryIds: Set<Long> = emptySet(),
+        excludedMaturities: Set<Int> = emptySet(),
+        excludedCasts: Set<CastSize> = emptySet(),
+        useRegex: Boolean = false
+    ): List<Quote> {
+        val orderBy = when (sort) {
+            SortOrder.NUMBER_ASC -> "number ASC"
+            SortOrder.NUMBER_DESC -> "number DESC"
+            SortOrder.RATING_ASC -> "rating IS NULL, rating ASC, number ASC"
+            SortOrder.RATING_DESC -> "rating IS NULL, rating DESC, number DESC"
+        }
+        val (joinWhere, args, empty) = searchWhere(
+            rawQuery, categoryIds, minRating, statusMode,
+            maturities, cast, excludedCategoryIds, excludedMaturities, excludedCasts,
+            skipText = useRegex
+        )
+        if (empty) return emptyList()
+        return dao.rawQuotes(
+            SimpleSQLiteQuery(
+                "SELECT DISTINCT quotes.* FROM quotes $joinWhere ORDER BY $orderBy",
+                args
+            )
+        )
+    }
+
+    /**
+     * v1.89.2: non-paging twin of [browse] with no row cap — every quote
+     * matching the filter-browse criteria, for the search-results export
+     * capture.
+     */
+    suspend fun browseAll(
+        sort: SortOrder,
+        minRating: Int? = null,
+        categoryIds: Set<Long> = emptySet(),
+        statusMode: StatusMode? = null,
+        maturities: List<MaturityLevel> = emptyList(),
+        cast: CastSize? = null,
+        excludedCategoryIds: Set<Long> = emptySet()
+    ): List<Quote> {
+        val orderBy = orderByFor(sort)
+        val where = withExcludedCategories(
+            withMaturities(
+                withCast(withStatus(ratingWhere(minRating), statusMode), cast),
+                maturities
+            ),
+            excludedCategoryIds
+        )
+        return dao.rawQuotes(
+            SimpleSQLiteQuery(
+                "SELECT DISTINCT quotes.* FROM quotes ${categoryJoin(categoryIds)}$where" +
+                    "ORDER BY $orderBy"
+            )
+        )
+    }
+
+    /**
      * Counts quotes matching the same criteria as [search], reusing its
      * WHERE construction (no paging, single COUNT query). Used by the
      * new-import search alerts so only the just-imported database is

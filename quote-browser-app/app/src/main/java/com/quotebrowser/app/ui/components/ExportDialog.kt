@@ -182,7 +182,11 @@ fun SingleQuoteExportDialog(
                                     // text" for the chat themes.
                                     stripNicks = nickStripSet.contains(
                                         siteStyle.noveltyCardThemeKey()
-                                    )
+                                    ),
+                                    // v1.89.2: dual-palette cards (Friends
+                                    // sunset vs wall) match the screen.
+                                    structureThemeId =
+                                        resolvedTheme?.structureThemeId
                                 )
                             } else {
                                 // The database's site theme: header, site

@@ -3145,6 +3145,43 @@ class DatabaseManager private constructor(private val appContext: Context) {
         saveBasket()
     }
 
+    // v1.89.2: search-results export capture — the Search screen stashes
+    // the full current result set as lightweight (dbId, number) entries
+    // in on-screen order, plus a display title; the Export screen's
+    // Search scope resolves them like the basket. In-memory only: a
+    // capture is a one-shot hand-off, not staging.
+    private val _searchExportEntries =
+        MutableStateFlow<List<BasketEntry>>(emptyList())
+    val searchExportEntries: StateFlow<List<BasketEntry>> =
+        _searchExportEntries.asStateFlow()
+
+    private val _searchExportTitle = MutableStateFlow("")
+    val searchExportTitle: StateFlow<String> = _searchExportTitle.asStateFlow()
+
+    fun setSearchExport(entries: List<BasketEntry>, title: String) {
+        _searchExportEntries.value = entries
+        _searchExportTitle.value = title
+    }
+
+    /** Resolves the captured search entries to quotes, in capture order. */
+    suspend fun searchExportQuotes(): List<SourcedQuote> =
+        withContext(Dispatchers.IO) {
+            val entries = _searchExportEntries.value
+            if (entries.isEmpty()) return@withContext emptyList()
+            val ids = allDbIds().toSet()
+            val out = ArrayList<SourcedQuote>(entries.size)
+            for (e in entries) {
+                if (e.dbId !in ids) continue
+                val q = try {
+                    repoFor(e.dbId).peekQuote(e.number)
+                } catch (_: Exception) {
+                    null
+                }
+                if (q != null) out += SourcedQuote(e.dbId, q)
+            }
+            out
+        }
+
     // Saved searches: most recent first, capped at 20.
     private val _savedSearches = MutableStateFlow(loadSavedSearches())
     val savedSearches: StateFlow<List<String>> = _savedSearches.asStateFlow()

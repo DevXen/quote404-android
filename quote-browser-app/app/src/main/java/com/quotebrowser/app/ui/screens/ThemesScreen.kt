@@ -419,8 +419,10 @@ private const val FIXED_SLOT_COUNT = 12
  * - creating a new custom theme,
  * - customizing a built-in preset (saved as a new custom theme),
  * - editing an existing custom theme in place.
+ * (Public since v1.89.5: the per-database theme rows in Settings open
+ * the same editor for a database's own themes.)
  */
-private data class ThemeEditorState(
+data class ThemeEditorState(
     val title: String,
     val initialName: String,
     val initialSlots: List<String>,
@@ -441,7 +443,7 @@ private data class ThemeEditorState(
 
 /** Theme editor (name + fixed color slots + name palette) shown as a dialog. */
 @Composable
-private fun ThemeEditorDialog(
+fun ThemeEditorDialog(
     state: ThemeEditorState,
     onDismiss: () -> Unit
 ) {

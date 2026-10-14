@@ -63,7 +63,10 @@ suspend fun DatabaseManager.widgetThemeSnapshots(): DbThemeSnapshots =
         configs = dbThemeConfigs.first(),
         customThemes = customThemes.first(),
         builtInOverrides = builtInThemeOverrides.first(),
-        classicLayoutEnabled = classicLayoutOption.first()
+        classicLayoutEnabled = classicLayoutOption.first(),
+        // v1.89.5: themes carried inside database files.
+        builtInDbThemes = dbBuiltInThemes.first(),
+        builtInDbCards = dbBuiltInCards.first()
     )
 
 /** The site-card colors for one database's widget card, or null for plain styling. */

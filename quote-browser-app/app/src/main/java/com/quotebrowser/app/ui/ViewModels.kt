@@ -530,6 +530,20 @@ class MainViewModel(private val manager: DatabaseManager) : ViewModel() {
     fun setDbThemeConfig(dbId: String, config: DatabaseThemeConfig) =
         manager.setDbThemeConfig(dbId, config)
 
+    // v1.89.5: themes carried inside database files, and the user's own
+    // themes per database.
+    val dbBuiltInThemes: StateFlow<Map<String, com.quotebrowser.app.ui.theme.ThemePreset>> =
+        manager.dbBuiltInThemes
+    val dbUserThemes: StateFlow<Map<String, List<CustomTheme>>> = manager.dbUserThemes
+    fun addDbUserTheme(dbId: String, name: String, colors: String): String =
+        manager.addDbUserTheme(dbId, name, colors)
+    fun updateDbUserTheme(dbId: String, index: Int, name: String, colors: String) =
+        manager.updateDbUserTheme(dbId, index, name, colors)
+    fun deleteDbUserTheme(dbId: String, index: Int) =
+        manager.deleteDbUserTheme(dbId, index)
+    fun promoteDbTheme(themeId: String): DatabaseManager.PromoteDbThemeResult =
+        manager.promoteDbThemeToMain(themeId)
+
     /**
      * v1.56: copies a SAF-picked image into app-private storage and stores
      * the file name on the database's theme config; deletes the previous

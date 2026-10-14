@@ -18,7 +18,12 @@ import com.quotebrowser.app.data.plugins.PluginManager
 import com.quotebrowser.app.ui.TransformMode
 import com.quotebrowser.app.ui.theme.CustomTheme
 import com.quotebrowser.app.ui.theme.DevXenBgMode
+import com.quotebrowser.app.ui.theme.ThemePreset
+import com.quotebrowser.app.ui.theme.ThemePresets
 import com.quotebrowser.app.ui.theme.customThemeId
+import com.quotebrowser.app.ui.theme.effectivePreset
+import com.quotebrowser.app.ui.theme.toThemeCsv
+import com.quotebrowser.app.ui.theme.withOverride
 import com.quotebrowser.app.ui.repoFor
 import com.quotebrowser.app.ui.cleanDisplayText
 import com.quotebrowser.app.ui.cleanSpokenText
@@ -310,6 +315,8 @@ class DatabaseManager private constructor(private val appContext: Context) {
         private const val KEY_DEVXEN_CUSTOM_BG = "devxen_custom_bg"
         private const val KEY_CUSTOM_THEME = "custom_theme_colors"
         private const val KEY_CUSTOM_THEMES = "custom_themes_json"
+        // v1.89.5: the user's own themes per database, keyed by db id.
+        private const val KEY_DB_USER_THEMES = "db_user_themes_json"
         private const val KEY_TEXT_SCALE = "text_scale"
         private const val KEY_RANDOM_SOURCES = "random_source_ids"
         private const val KEY_BASKET = "export_basket"
@@ -944,6 +951,16 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 } catch (t: Throwable) {
                     Log.w("QuoteBrowser", "bundled sync heal failed", t)
                 }
+                // v1.89.5: scan the on-device database files for themes
+                // carried in their db_info tables (cheap; unchanged
+                // files are stamp-skipped). Runs again after the startup
+                // update pass below, in case an update landed new theme
+                // data.
+                try {
+                    kotlinx.coroutines.runBlocking { refreshDbBuiltInThemes() }
+                } catch (t: Throwable) {
+                    Log.w("QuoteBrowser", "db carried-theme scan failed", t)
+                }
                 // v1.88.14: the v1.88.11 pre-warm loop (opening every bundled
                 // Room database here) is REMOVED. Since v1.88.12 every UI
                 // open runs on a Dispatchers.IO thread, so a cold open can
@@ -985,6 +1002,12 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 } catch (t: Throwable) {
                     Log.w("QuoteBrowser", "downloadable-db startup pass failed", t)
                 } finally {
+                    // v1.89.5: updates may have landed new carried themes.
+                    try {
+                        kotlinx.coroutines.runBlocking { refreshDbBuiltInThemes() }
+                    } catch (t: Throwable) {
+                        Log.w("QuoteBrowser", "db carried-theme rescan failed", t)
+                    }
                     try {
                         Thread.currentThread().priority = Thread.NORM_PRIORITY
                     } catch (_: Exception) {
@@ -3870,6 +3893,414 @@ class DatabaseManager private constructor(private val appContext: Context) {
         prefs.edit().putString(KEY_DB_THEME_CONFIGS, obj.toString()).apply()
     }
 
+    // ------------------------------------------------------------------
+    // v1.89.5: database-carried themes.
+    //
+    // A database file can carry its own site theme in its db_info table
+    // (key "theme", a JSON spec). Those themes are read off the raw file
+    // (never during composition), materialized as ThemePresets with the
+    // stable id "dbtheme:<dbId>", and published below for per-database
+    // resolution (ahead of the hardcoded DB_SITE_THEMES mapping).
+    // Users can also keep their OWN themes per database (id
+    // "dbuser:<dbId>:<index>"), stored app-side in prefs keyed by db id —
+    // never inside the .db file — and any database-associated theme can
+    // be promoted into the main custom-theme catalog. DatabaseManager
+    // materializes both families into DbThemeRegistry, which
+    // effectivePreset consults.
+    // ------------------------------------------------------------------
+
+    /** A theme parsed out of a database file, plus its card structure name. */
+    private data class DbCarriedTheme(val preset: ThemePreset, val card: String)
+
+    /** Scan cache entry: the file stamp the parse was taken from. */
+    private data class DbThemeScanEntry(
+        val length: Long,
+        val modified: Long,
+        val carried: DbCarriedTheme?
+    )
+
+    private val dbThemeScanLock = Any()
+    private val dbThemeScanCache = HashMap<String, DbThemeScanEntry>()
+
+    private val _dbBuiltInThemes = MutableStateFlow<Map<String, ThemePreset>>(emptyMap())
+
+    /** Themes carried inside database files, keyed by database id. */
+    val dbBuiltInThemes: StateFlow<Map<String, ThemePreset>> = _dbBuiltInThemes.asStateFlow()
+
+    private val _dbBuiltInCards = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** Card structure names from database-carried themes, keyed by db id. */
+    val dbBuiltInCards: StateFlow<Map<String, String>> = _dbBuiltInCards.asStateFlow()
+
+    private val _dbUserThemes = MutableStateFlow(loadDbUserThemes())
+
+    /** The user's own themes per database, keyed by database id. */
+    val dbUserThemes: StateFlow<Map<String, List<CustomTheme>>> = _dbUserThemes.asStateFlow()
+
+    init {
+        // Materialize any stored per-database user themes up front so
+        // effectivePreset can resolve "dbuser:" ids before the first
+        // built-in scan lands.
+        rebuildDbThemeRegistry()
+    }
+
+    /** The preset missing spec keys fall back to: the current app theme's. */
+    private fun globalThemeBasePreset(): ThemePreset {
+        val gid = _themeId.value
+        effectivePreset(gid, _builtInThemeOverrides.value)?.let { return it }
+        val fallback = ThemePresets.firstOrNull { it.id == "quote404" } ?: ThemePresets.first()
+        if (gid.startsWith("custom:")) {
+            val index = gid.removePrefix("custom:").toIntOrNull()
+            val colors = index?.let { _customThemes.value.getOrNull(it)?.colors }
+            if (colors != null) return fallback.withOverride(colors)
+        }
+        return fallback
+    }
+
+    /** "#RRGGBB" (or "RRGGBB" / "#AARRGGBB") -> ARGB Long, or null. */
+    private fun parseDbThemeColor(raw: String?): Long? {
+        if (raw.isNullOrBlank()) return null
+        var s = raw.trim().removePrefix("#")
+        if (s.length == 6) s = "FF$s"
+        if (s.length != 8) return null
+        return try {
+            s.toLong(16)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Runs [block] against a read-only open of [file]. A WAL-mode file
+     * held by Room can refuse a read-only open, so on failure the file
+     * (plus its -wal/-shm sidecars) is copied to the cache dir and the
+     * copy is opened instead — db_info is build-time data, so the copy
+     * carries it faithfully.
+     */
+    private fun <T> openDbFileReadOnly(file: File, block: (SQLiteDatabase) -> T): T? {
+        try {
+            SQLiteDatabase.openDatabase(
+                file.path, null, SQLiteDatabase.OPEN_READONLY
+            ).use { return block(it) }
+        } catch (e: Exception) {
+            // Fall through to the copy.
+        }
+        val tmpDir = File(appContext.cacheDir, "dbinfo_probe").apply { mkdirs() }
+        val tmp = File(tmpDir, "probe_${file.absolutePath.hashCode()}_${file.name}")
+        return try {
+            file.copyTo(tmp, overwrite = true)
+            for (suffix in listOf("-wal", "-shm")) {
+                val sidecar = File(file.path + suffix)
+                if (sidecar.exists()) {
+                    sidecar.copyTo(File(tmp.path + suffix), overwrite = true)
+                }
+            }
+            SQLiteDatabase.openDatabase(
+                tmp.path, null, SQLiteDatabase.OPEN_READONLY
+            ).use { block(it) }
+        } catch (e: Exception) {
+            null
+        } finally {
+            try {
+                tmp.delete()
+                File(tmp.path + "-wal").delete()
+                File(tmp.path + "-shm").delete()
+            } catch (e: Exception) {
+                // Best effort cleanup only.
+            }
+        }
+    }
+
+    /** Reads one value out of a database file's db_info table, or null. */
+    private fun readDbInfoValue(file: File, key: String): String? {
+        if (!file.exists()) return null
+        return try {
+            openDbFileReadOnly(file) { db ->
+                db.rawQuery(
+                    "SELECT value FROM db_info WHERE key = ?", arrayOf(key)
+                ).use { c ->
+                    if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Parses the db_info "theme" JSON spec leniently: any missing or
+     * invalid key falls back to the current global theme's value, and a
+     * missing "dark" flag is derived from the background luminance.
+     */
+    private fun materializeDbCarriedTheme(dbId: String, raw: String): DbCarriedTheme? {
+        val json = try {
+            JSONObject(raw)
+        } catch (e: Exception) {
+            return null
+        }
+        return try {
+            val base = globalThemeBasePreset()
+            fun col(key: String, fallback: Long): Long =
+                parseDbThemeColor(json.optString(key, "")) ?: fallback
+            val background = col("background", base.background)
+            val dark = if (json.has("dark") && !json.isNull("dark")) {
+                json.optBoolean("dark", base.dark)
+            } else {
+                val r = ((background shr 16) and 0xFF) / 255f
+                val g = ((background shr 8) and 0xFF) / 255f
+                val b = (background and 0xFF) / 255f
+                (r * 0.299f + g * 0.587f + b * 0.114f) < 0.5f
+            }
+            val preset = ThemePreset(
+                id = dbBuiltInThemeId(dbId),
+                name = json.optString("name", "").trim().ifBlank { shortLabel(dbId) },
+                dark = dark,
+                background = background,
+                surface = col("surface", base.surface),
+                primary = col("primary", base.primary),
+                onBackground = col("onBackground", base.onBackground),
+                onSurface = col("onSurface", base.onSurface),
+                number = col("number", base.number),
+                divider = col("divider", base.divider),
+                quoteBackground = col("quoteBackground", base.quoteBackground)
+            )
+            val card = json.optString("card", "").trim().ifBlank { "standard" }
+            DbCarriedTheme(preset, card)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * (Re)scans every known database file for a carried theme. Cheap for
+     * unchanged files (length + lastModified stamp), and every failure
+     * just means "no built-in theme". Call from background threads only.
+     */
+    suspend fun refreshDbBuiltInThemes() {
+        val ids = try {
+            allDbIds()
+        } catch (e: Exception) {
+            try {
+                bundledDbs().map { it.id }
+            } catch (e2: Exception) {
+                emptyList()
+            }
+        }
+        withContext(Dispatchers.IO) {
+            synchronized(dbThemeScanLock) {
+                val presets = LinkedHashMap<String, ThemePreset>()
+                val cards = LinkedHashMap<String, String>()
+                for (id in ids) {
+                    val file = dbFileForExport(id) ?: continue
+                    if (!file.exists()) continue
+                    val cached = dbThemeScanCache[id]
+                    val carried = if (cached != null &&
+                        cached.length == file.length() &&
+                        cached.modified == file.lastModified()
+                    ) {
+                        cached.carried
+                    } else {
+                        val raw = try {
+                            readDbInfoValue(file, "theme")
+                        } catch (e: Exception) {
+                            null
+                        }
+                        val parsed = raw?.let { materializeDbCarriedTheme(id, it) }
+                        dbThemeScanCache[id] =
+                            DbThemeScanEntry(file.length(), file.lastModified(), parsed)
+                        parsed
+                    }
+                    if (carried != null) {
+                        presets[id] = carried.preset
+                        cards[id] = carried.card
+                    }
+                }
+                dbThemeScanCache.keys.retainAll(ids.toSet())
+                _dbBuiltInThemes.value = presets
+                _dbBuiltInCards.value = cards
+                rebuildDbThemeRegistry()
+            }
+        }
+    }
+
+    /** Drops a database's carried theme (used when it is uninstalled). */
+    private fun forgetDbBuiltInTheme(dbId: String) {
+        synchronized(dbThemeScanLock) {
+            dbThemeScanCache.remove(dbId)
+            if (_dbBuiltInThemes.value.containsKey(dbId)) {
+                _dbBuiltInThemes.value = _dbBuiltInThemes.value - dbId
+                _dbBuiltInCards.value = _dbBuiltInCards.value - dbId
+                rebuildDbThemeRegistry()
+            }
+        }
+    }
+
+    // -- The user's own themes per database (app-side storage) ---------
+
+    private fun loadDbUserThemes(): Map<String, List<CustomTheme>> {
+        val raw = prefs.getString(KEY_DB_USER_THEMES, null) ?: return emptyMap()
+        return try {
+            val obj = JSONObject(raw)
+            val out = LinkedHashMap<String, List<CustomTheme>>()
+            for (dbId in obj.keys()) {
+                val arr = obj.optJSONArray(dbId) ?: continue
+                val list = ArrayList<CustomTheme>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val colors = o.optString("colors", "")
+                    if (colors.isBlank()) continue
+                    list += CustomTheme(
+                        o.optString("name", "").ifBlank { "Custom ${i + 1}" },
+                        colors
+                    )
+                }
+                if (list.isNotEmpty()) out[dbId] = list
+            }
+            out
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun persistDbUserThemes(map: Map<String, List<CustomTheme>>) {
+        val obj = JSONObject()
+        map.forEach { (dbId, themes) ->
+            val arr = JSONArray()
+            themes.forEach { t ->
+                arr.put(JSONObject().put("name", t.name).put("colors", t.colors))
+            }
+            obj.put(dbId, arr)
+        }
+        prefs.edit().putString(KEY_DB_USER_THEMES, obj.toString()).apply()
+        _dbUserThemes.value = map
+        rebuildDbThemeRegistry()
+    }
+
+    /** The user's own themes for [dbId] (empty when none). */
+    fun dbUserThemesFor(dbId: String): List<CustomTheme> =
+        _dbUserThemes.value[dbId].orEmpty()
+
+    /** Adds a user theme for [dbId]; returns its new theme id. */
+    fun addDbUserTheme(dbId: String, name: String, colors: String): String {
+        val list = dbUserThemesFor(dbId).toMutableList()
+        list += CustomTheme(name.trim().ifEmpty { "Custom ${list.size + 1}" }, colors)
+        val map = _dbUserThemes.value.toMutableMap()
+        map[dbId] = list
+        persistDbUserThemes(map)
+        return dbUserThemeId(dbId, list.lastIndex)
+    }
+
+    fun updateDbUserTheme(dbId: String, index: Int, name: String, colors: String) {
+        val list = dbUserThemesFor(dbId).toMutableList()
+        if (index !in list.indices) return
+        list[index] = CustomTheme(name.trim().ifEmpty { list[index].name }, colors)
+        val map = _dbUserThemes.value.toMutableMap()
+        map[dbId] = list
+        persistDbUserThemes(map)
+    }
+
+    fun deleteDbUserTheme(dbId: String, index: Int) {
+        val list = dbUserThemesFor(dbId).toMutableList()
+        if (index !in list.indices) return
+        list.removeAt(index)
+        val map = _dbUserThemes.value.toMutableMap()
+        if (list.isEmpty()) map.remove(dbId) else map[dbId] = list
+        persistDbUserThemes(map)
+        // Keep this database's stored theme choice pointing at the same
+        // theme: indexes above the deleted one shift down by one, and a
+        // choice pointing at the deleted theme itself resets to the
+        // database default.
+        val cfg = dbThemeConfig(dbId)
+        parseDbUserThemeId(cfg.themeId)?.let { (cfgDb, cfgIndex) ->
+            if (cfgDb == dbId) {
+                when {
+                    cfgIndex == index ->
+                        setDbThemeConfig(dbId, cfg.copy(themeId = ""))
+                    cfgIndex > index ->
+                        setDbThemeConfig(
+                            dbId, cfg.copy(themeId = dbUserThemeId(dbId, cfgIndex - 1))
+                        )
+                }
+            }
+        }
+    }
+
+    // -- Promotion into the main theme catalog -------------------------
+
+    /** Outcome of [promoteDbThemeToMain], worded by the caller. */
+    sealed interface PromoteDbThemeResult {
+        /** Copied into the main catalog under [name]. */
+        data class Added(val name: String) : PromoteDbThemeResult
+
+        /** An identical name + spec copy is already in the main catalog. */
+        data class AlreadyThere(val name: String) : PromoteDbThemeResult
+
+        /** The theme id did not resolve to a database theme. */
+        data object Unavailable : PromoteDbThemeResult
+    }
+
+    /**
+     * Copies a database-associated theme ("dbtheme:" built-in or
+     * "dbuser:" per-database user theme) into the MAIN custom-theme
+     * catalog as a normal user theme, independent of the database. Name
+     * collisions with different specs are disambiguated with
+     * "(from database)"; an identical name + spec already present is
+     * reported instead of duplicated.
+     */
+    fun promoteDbThemeToMain(themeId: String): PromoteDbThemeResult {
+        val spec: Pair<String, String>? = when {
+            themeId.startsWith("dbtheme:") -> {
+                val dbId = themeId.removePrefix("dbtheme:")
+                _dbBuiltInThemes.value[dbId]?.let { it.name to it.toThemeCsv() }
+            }
+            themeId.startsWith("dbuser:") -> {
+                parseDbUserThemeId(themeId)?.let { (dbId, index) ->
+                    dbUserThemesFor(dbId).getOrNull(index)?.let { it.name to it.colors }
+                }
+            }
+            else -> null
+        }
+        val (name, colors) = spec ?: return PromoteDbThemeResult.Unavailable
+        val existing = _customThemes.value
+        val candidates = listOf(name, "$name (from database)") +
+            (2..20).map { "$name (from database) $it" }
+        for (candidate in candidates) {
+            val clash = existing.firstOrNull { it.name == candidate }
+            when {
+                clash == null -> {
+                    addCustomTheme(candidate, colors)
+                    return PromoteDbThemeResult.Added(candidate)
+                }
+                clash.colors == colors ->
+                    return PromoteDbThemeResult.AlreadyThere(candidate)
+            }
+        }
+        return PromoteDbThemeResult.Unavailable
+    }
+
+    /** Rebuilds [DbThemeRegistry] from the built-in and per-db user themes. */
+    private fun rebuildDbThemeRegistry() {
+        val map = HashMap<String, ThemePreset>()
+        _dbBuiltInThemes.value.values.forEach { map[it.id] = it }
+        _dbUserThemes.value.forEach { (dbId, themes) ->
+            themes.forEachIndexed { index, theme ->
+                map[dbUserThemeId(dbId, index)] =
+                    materializeDbUserTheme(dbId, index, theme)
+            }
+        }
+        DbThemeRegistry.presets = map
+    }
+
+    private fun materializeDbUserTheme(
+        dbId: String,
+        index: Int,
+        theme: CustomTheme
+    ): ThemePreset {
+        val base = ThemePresets.firstOrNull { it.id == "quote404" } ?: ThemePresets.first()
+        return base.withOverride(theme.colors)
+            .copy(id = dbUserThemeId(dbId, index), name = theme.name)
+    }
+
     /**
      * v1.56: app-private directory for per-database page background
      * images (Settings → database themes → "Background image"). Images
@@ -5321,6 +5752,8 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     tmp.delete()
                 }
             }
+            // v1.89.5: a freshly landed database may carry its own theme.
+            refreshDbBuiltInThemes()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.w("QuoteBrowser", "installDb failed for $file", e)
@@ -5360,6 +5793,10 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     switchDatabase(next)
                 }
                 bumpCatalogChanged()
+                // v1.89.5: drop the carried theme with the database (the
+                // user's own themes for it are kept and reattach if it
+                // is ever installed again).
+                forgetDbBuiltInTheme("asset:$file")
                 removed = true
             }
         }
@@ -5495,6 +5932,14 @@ class DatabaseManager private constructor(private val appContext: Context) {
         } catch (e: Exception) {
             Log.w("QuoteBrowser", "loadDbFile failed for $rawName", e)
             Result.failure(e)
+        } finally {
+            // v1.89.5: the landed file may carry its own theme. (Outside
+            // the per-file lock above: a scan never suspends under it.)
+            try {
+                refreshDbBuiltInThemes()
+            } catch (e: Exception) {
+                Log.w("QuoteBrowser", "db theme rescan after load failed", e)
+            }
         }
     }
 
@@ -5980,6 +6425,14 @@ class DatabaseManager private constructor(private val appContext: Context) {
             val deviceFile = catalogDeviceFile(assetName)
             val before = quoteCountOnFile(deviceFile)
             landDownloadedDb(entry, tmp)
+            // v1.89.5: an updated database may carry a (new) theme.
+            managerScope.launch {
+                try {
+                    refreshDbBuiltInThemes()
+                } catch (e: Exception) {
+                    Log.w("QuoteBrowser", "db theme rescan after update failed", e)
+                }
+            }
             val after = quoteCountOnFile(deviceFile)
             val fmt = java.text.NumberFormat.getIntegerInstance()
             return DbUpdateOutcome(
@@ -6978,6 +7431,12 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     browsePositionStore.clearPosition(id)
                 } catch (e: Exception) {
                     Log.w("BrowsePosition", "position clear failed for $id", e)
+                }
+                // v1.89.5: an imported database may carry its own theme.
+                try {
+                    refreshDbBuiltInThemes()
+                } catch (e: Exception) {
+                    Log.w("QuoteBrowser", "db theme rescan after import failed", e)
                 }
                 Result.success(DbInfo(id = id, label = prettifyLabel(id)))
             } catch (e: Exception) {

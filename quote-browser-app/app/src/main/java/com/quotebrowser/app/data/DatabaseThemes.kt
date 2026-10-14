@@ -1,6 +1,7 @@
 package com.quotebrowser.app.data
 
 import com.quotebrowser.app.data.plugins.PluginManager
+import com.quotebrowser.app.ui.theme.ThemePreset
 import org.json.JSONObject
 
 /**
@@ -149,6 +150,38 @@ val DB_THEME_IDS: Set<String> = DB_SITE_THEMES.values.toSet()
 fun siteThemeFor(dbId: String): String? = DB_SITE_THEMES[dbId]
 
 /**
+ * v1.89.5: runtime registry of database-associated theme presets,
+ * maintained by DatabaseManager and consulted by effectivePreset (the
+ * same pattern as PluginManager.themePresets). Holds two id families:
+ * "dbtheme:<dbId>" — the theme carried inside a database file — and
+ * "dbuser:<dbId>:<index>" — the user's own themes for one database.
+ */
+object DbThemeRegistry {
+    @Volatile
+    var presets: Map<String, ThemePreset> = emptyMap()
+}
+
+/** Theme id of the theme carried inside [dbId]'s database file. */
+fun dbBuiltInThemeId(dbId: String): String = "dbtheme:$dbId"
+
+/** Theme id of the user's [index]-th own theme for [dbId]. */
+fun dbUserThemeId(dbId: String, index: Int): String = "dbuser:$dbId:$index"
+
+/**
+ * Splits a "dbuser:" theme id back into (dbId, index); the db id itself
+ * may contain ':' (e.g. "asset:fml.db"), so the index is the segment
+ * after the LAST colon.
+ */
+fun parseDbUserThemeId(themeId: String): Pair<String, Int>? {
+    if (!themeId.startsWith("dbuser:")) return null
+    val rest = themeId.removePrefix("dbuser:")
+    val sep = rest.lastIndexOf(':')
+    if (sep <= 0) return null
+    val index = rest.substring(sep + 1).toIntOrNull() ?: return null
+    return rest.substring(0, sep) to index
+}
+
+/**
  * Pure resolution of one database's effective theming. No I/O: everything
  * needed is passed in, so card composition can call this safely.
  */
@@ -180,7 +213,16 @@ data class DbThemeSnapshots(
     val customThemes: List<com.quotebrowser.app.ui.theme.CustomTheme> = emptyList(),
     val builtInOverrides: Map<String, String> = emptyMap(),
     /** The "Classic layout option" feature toggle; off demotes Classic to Site. */
-    val classicLayoutEnabled: Boolean = true
+    val classicLayoutEnabled: Boolean = true,
+    /**
+     * v1.89.5: themes carried inside database files, dbId -> preset.
+     * When a database has one and the user hasn't chosen a theme for it,
+     * it is the database's default theme (ahead of the hardcoded
+     * [DB_SITE_THEMES] mapping).
+     */
+    val builtInDbThemes: Map<String, ThemePreset> = emptyMap(),
+    /** v1.89.5: card structure names from those databases, dbId -> card. */
+    val builtInDbCards: Map<String, String> = emptyMap()
 ) {
     companion object {
         /** Feature off / unknown state: everything resolves bypassed. */
@@ -209,7 +251,12 @@ fun resolveDbTheme(snap: DbThemeSnapshots, dbId: String?): ResolvedDbTheme {
     if (!cfg.themeEnabled) {
         return ResolvedDbTheme(true, snap.globalThemeId, null, SiteLayout.MODERN)
     }
-    val chosen = cfg.themeId.ifBlank { siteThemeFor(dbId) }.orEmpty()
+    // v1.89.5 default order: the user's stored choice, then the theme
+    // carried inside the database file, then the hardcoded site mapping.
+    val chosen = cfg.themeId.ifBlank {
+        if (snap.builtInDbThemes.containsKey(dbId)) dbBuiltInThemeId(dbId)
+        else siteThemeFor(dbId)
+    }.orEmpty()
     val palette = if (cfg.siteColors && chosen.isNotBlank()) chosen else snap.globalThemeId
     // The "Classic layout option" feature toggle gates the Classic QDB
     // choice; when off, Classic demotes to Site.
@@ -218,7 +265,15 @@ fun resolveDbTheme(snap: DbThemeSnapshots, dbId: String?): ResolvedDbTheme {
     val structure = when (layout) {
         SiteLayout.MODERN -> null
         SiteLayout.CLASSIC -> CLASSIC_STRUCTURE_ID
-        SiteLayout.SITE -> chosen.ifBlank { null }
+        SiteLayout.SITE -> when {
+            chosen.isBlank() -> null
+            // v1.89.5: a database-carried theme names its card structure
+            // in its spec; "standard" (and anything unrecognized) means
+            // the standard card — no special site structure — painted
+            // with the carried palette.
+            chosen.startsWith("dbtheme:") -> null
+            else -> chosen
+        }
     }
     // Centered header logo only for the DB's own site theme in Site layout
     // (the same gate as site art).

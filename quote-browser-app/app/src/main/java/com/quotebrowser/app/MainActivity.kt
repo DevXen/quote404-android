@@ -218,6 +218,9 @@ class MainActivity : ComponentActivity() {
             val dbThemeConfigs by manager.dbThemeConfigs.collectAsState(initial = emptyMap())
             val builtInOverrides by manager.builtInThemeOverrides.collectAsState(initial = emptyMap())
             val classicLayoutOn by manager.classicLayoutOption.collectAsState(initial = true)
+            // v1.89.5: themes carried inside database files.
+            val dbBuiltInThemes by manager.dbBuiltInThemes.collectAsState(initial = emptyMap())
+            val dbBuiltInCards by manager.dbBuiltInCards.collectAsState(initial = emptyMap())
             val transformModeName by manager.transformMode.collectAsState(initial = TransformMode.OFF.name)
             val voteControlsOn by manager.plusMinusRatingsEnabled.collectAsState(initial = true)
             val queuedTagsOn by manager.queuedTagsEnabled.collectAsState(initial = true)
@@ -231,7 +234,8 @@ class MainActivity : ComponentActivity() {
             val kidSafeOn by manager.kidSafeEnabled.collectAsState(initial = false)
             val dbThemeSnap = remember(
                 themeId, perDbThemesOn, masterOverride, dbThemeConfigs,
-                customThemes, builtInOverrides, classicLayoutOn
+                customThemes, builtInOverrides, classicLayoutOn,
+                dbBuiltInThemes, dbBuiltInCards
             ) {
                 DbThemeSnapshots(
                     globalThemeId = themeId,
@@ -240,7 +244,9 @@ class MainActivity : ComponentActivity() {
                     configs = dbThemeConfigs,
                     customThemes = customThemes,
                     builtInOverrides = builtInOverrides,
-                    classicLayoutEnabled = classicLayoutOn
+                    classicLayoutEnabled = classicLayoutOn,
+                    builtInDbThemes = dbBuiltInThemes,
+                    builtInDbCards = dbBuiltInCards
                 )
             }
             val resolvedRoot = remember(dbThemeSnap, currentDbId) {

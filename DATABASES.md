@@ -35,6 +35,27 @@ SQLite, mirroring the existing databases exactly:
 - Run `PRAGMA integrity_check` and confirm `quotes_fts` count == `quotes`
   count before publishing.
 
+## Built-in site theme (`db_info.theme`)
+
+A database can carry its own default theme — the source site's look — as a
+`theme` row in `db_info` holding a JSON spec:
+
+```json
+{"name": "FML", "dark": false, "background": "#EEF2F7", "surface": "#FFFFFF",
+ "primary": "#2F6DB3", "onBackground": "#1F2937", "onSurface": "#1F2937",
+ "number": "#E07B39", "divider": "#C9D6E4", "quoteBackground": "#FFFFFF",
+ "card": "standard"}
+```
+
+Colors are `#RRGGBB`; `card` names a built-in card structure (`standard`
+today). Since v1.89.5 the app reads this on install/update and uses it as
+the database's default theme, unless the user has picked a different theme
+for that database. Users can also add their own themes to a database
+in-app, and load ("Add to my themes") any database theme — built-in or
+their own — into their main theme list, where it survives removing the
+database. Parsing is lenient: missing or invalid keys fall back to the
+current global theme's values, so a partial spec is safe.
+
 ## Manifest entry
 
 ```json

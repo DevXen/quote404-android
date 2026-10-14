@@ -4140,16 +4140,36 @@ fun DbQuickThemeDialog(
         ThemePresets.find { it.id == siteThemeId }?.name ?: "Site default"
     // v1.83: plugin theme packs available as per-database palette themes.
     val pluginThemeOptions by com.quotebrowser.app.data.plugins.rememberPluginThemeOptions()
+    // v1.89.5: the database's own themes (carried in its file + the
+    // user's per-database themes) join the picker list; managing them
+    // (add / edit / promote) lives in the Settings row.
+    val context = LocalContext.current
+    val manager = remember(context) { DatabaseManager.getInstance(context) }
+    val builtInThemes by manager.dbBuiltInThemes.collectAsState(initial = emptyMap())
+    val allDbUserThemes by manager.dbUserThemes.collectAsState(initial = emptyMap())
+    val builtInTheme = builtInThemes[db.id]
+    val userThemes = allDbUserThemes[db.id].orEmpty()
+    val siteDefaultLabel =
+        if (builtInTheme != null) "Site default (${builtInTheme.name})"
+        else "Site default ($siteThemeName)"
     // v1.88.23: grouped into labeled sections (shared with Settings).
-    val themeOptions = remember(customThemes, pluginThemeOptions, siteThemeName) {
+    val themeOptions = remember(
+        customThemes, pluginThemeOptions, siteDefaultLabel, builtInTheme, userThemes, db.id
+    ) {
         groupedDbThemeOptions(
-            "Site default ($siteThemeName)", customThemes, pluginThemeOptions
+            siteDefaultLabel, customThemes, pluginThemeOptions,
+            builtInTheme = builtInTheme?.let {
+                com.quotebrowser.app.data.dbBuiltInThemeId(db.id) to it.name
+            },
+            dbUserThemeOptions = userThemes.mapIndexed { index, theme ->
+                com.quotebrowser.app.data.dbUserThemeId(db.id, index) to theme.name
+            }
         )
     }
     val selectedThemeName = themeOptions
         .filterIsInstance<ThemeOption.Item>()
         .find { it.id == config.themeId }?.name
-        ?: "Site default ($siteThemeName)"
+        ?: siteDefaultLabel
     AccentAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("${db.label} theme") },

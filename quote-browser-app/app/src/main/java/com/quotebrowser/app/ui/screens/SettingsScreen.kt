@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
@@ -115,6 +116,9 @@ import com.quotebrowser.app.data.SiteLayout
 import com.quotebrowser.app.data.plugins.rememberPluginThemeOptions
 import com.quotebrowser.app.data.StatusMode
 import com.quotebrowser.app.data.siteThemeFor
+import com.quotebrowser.app.data.dbBuiltInThemeId
+import com.quotebrowser.app.data.dbUserThemeId
+import com.quotebrowser.app.ui.DefaultNickNameColors
 import com.quotebrowser.app.ui.MainViewModel
 import com.quotebrowser.app.ui.MOOD_PRESETS
 import com.quotebrowser.app.ui.MoodPreset
@@ -132,8 +136,15 @@ import com.quotebrowser.app.ui.components.LocalDbThemeSnapshots
 import com.quotebrowser.app.ui.components.VacationModeSetting
 import com.quotebrowser.app.ui.components.colorToHex
 import com.quotebrowser.app.ui.theme.CustomTheme
+import com.quotebrowser.app.ui.theme.DEFAULT_NICK_BRACKETS_HEX
+import com.quotebrowser.app.ui.theme.DEFAULT_RATING_HEX
 import com.quotebrowser.app.ui.theme.ThemeOption
+import com.quotebrowser.app.ui.theme.ThemePreset
+import com.quotebrowser.app.ui.theme.defaultBracketHexes
+import com.quotebrowser.app.ui.theme.defaultBracketTint
 import com.quotebrowser.app.ui.theme.groupedDbThemeOptions
+import com.quotebrowser.app.ui.theme.parseCustomThemeSlots
+import com.quotebrowser.app.ui.theme.toThemeCsv
 import com.quotebrowser.app.ui.components.DatabaseMultiSelectDialog
 import com.quotebrowser.app.ui.theme.effectivePreset
 import com.quotebrowser.app.ui.theme.quoteBackgroundFor
@@ -525,6 +536,9 @@ fun SettingsScreen(
     // v1.59: Quote-of-the-Day notification source ("random_sources" | "favorites").
     val qotdSource by vm.qotdSource.collectAsStateWithLifecycle()
     val dbThemeConfigs by vm.dbThemeConfigs.collectAsStateWithLifecycle()
+    // v1.89.5: themes carried inside database files + per-db user themes.
+    val dbBuiltInThemes by vm.dbBuiltInThemes.collectAsStateWithLifecycle()
+    val dbUserThemes by vm.dbUserThemes.collectAsStateWithLifecycle()
     // "All databases" is a virtual entry; backups only list real databases.
     val backupDbs = remember(databases) {
         databases.filter { it.id != com.quotebrowser.app.data.DatabaseManager.ALL_DBS_ID }
@@ -964,9 +978,30 @@ fun SettingsScreen(
                                                 config = dbThemeConfigs[db.id]
                                                     ?: com.quotebrowser.app.data.DatabaseThemeConfig(),
                                                 customThemes = customThemes,
+                                                builtInTheme = dbBuiltInThemes[db.id],
+                                                dbUserThemes = dbUserThemes[db.id].orEmpty(),
                                                 onConfigChange = { vm.setDbThemeConfig(db.id, it) },
                                                 onPickBackgroundImage = { vm.setDbPageBackgroundImage(db.id, it) },
-                                                onClearBackgroundImage = { vm.clearDbPageBackgroundImage(db.id) }
+                                                onClearBackgroundImage = { vm.clearDbPageBackgroundImage(db.id) },
+                                                onAddDbUserTheme = { name, colors ->
+                                                    vm.addDbUserTheme(db.id, name, colors)
+                                                },
+                                                onUpdateDbUserTheme = { index, name, colors ->
+                                                    vm.updateDbUserTheme(db.id, index, name, colors)
+                                                },
+                                                onDeleteDbUserTheme = { index ->
+                                                    vm.deleteDbUserTheme(db.id, index)
+                                                },
+                                                onPromoteTheme = { themeId ->
+                                                    when (val result = vm.promoteDbTheme(themeId)) {
+                                                        is DatabaseManager.PromoteDbThemeResult.Added ->
+                                                            "Added \"${result.name}\" to your themes."
+                                                        is DatabaseManager.PromoteDbThemeResult.AlreadyThere ->
+                                                            "Already in your themes."
+                                                        DatabaseManager.PromoteDbThemeResult.Unavailable ->
+                                                            "That theme isn't available."
+                                                    }
+                                                }
                                             )
                                         }
                                         }
@@ -3695,27 +3730,80 @@ private fun DbThemeRow(
     db: DbInfo,
     config: DatabaseThemeConfig,
     customThemes: List<CustomTheme>,
+    builtInTheme: ThemePreset?,
+    dbUserThemes: List<CustomTheme>,
     onConfigChange: (DatabaseThemeConfig) -> Unit,
     onPickBackgroundImage: (Uri) -> Unit,
-    onClearBackgroundImage: () -> Unit
+    onClearBackgroundImage: () -> Unit,
+    onAddDbUserTheme: (name: String, colors: String) -> String,
+    onUpdateDbUserTheme: (index: Int, name: String, colors: String) -> Unit,
+    onDeleteDbUserTheme: (index: Int) -> Unit,
+    onPromoteTheme: (themeId: String) -> String
 ) {
     var themeMenuOpen by remember { mutableStateOf(false) }
+    // v1.89.5: the shared theme editor, opened for this database's own
+    // themes (create + edit), and the last promotion result message.
+    var themeEditor by remember { mutableStateOf<ThemeEditorState?>(null) }
+    var promoteMessage by remember { mutableStateOf<String?>(null) }
     val siteThemeId = siteThemeFor(db.id)
     val siteThemeName =
         ThemePresets.find { it.id == siteThemeId }?.name ?: "Site default"
+    // v1.89.5: with no stored choice, resolution lands on the theme
+    // carried in the database file, so that is what "Site default"
+    // shows when one is present.
+    val siteDefaultLabel =
+        if (builtInTheme != null) "Site default (${builtInTheme.name})"
+        else "Site default ($siteThemeName)"
     // v1.83: plugin theme packs available as per-database palette themes.
     val pluginThemeOptions by rememberPluginThemeOptions()
     // v1.88.23: grouped into labeled sections (shared with the quick
-    // theme dialog).
-    val themeOptions = remember(customThemes, pluginThemeOptions, siteThemeName) {
+    // theme dialog). v1.89.5: plus the database's own themes.
+    val themeOptions = remember(
+        customThemes, pluginThemeOptions, siteDefaultLabel, builtInTheme, dbUserThemes, db.id
+    ) {
         groupedDbThemeOptions(
-            "Site default ($siteThemeName)", customThemes, pluginThemeOptions
+            siteDefaultLabel, customThemes, pluginThemeOptions,
+            builtInTheme = builtInTheme?.let { dbBuiltInThemeId(db.id) to it.name },
+            dbUserThemeOptions = dbUserThemes.mapIndexed { index, theme ->
+                dbUserThemeId(db.id, index) to theme.name
+            }
         )
     }
     val selectedThemeName = themeOptions
         .filterIsInstance<ThemeOption.Item>()
         .find { it.id == config.themeId }?.name
-        ?: "Site default ($siteThemeName)"
+        ?: siteDefaultLabel
+
+    // v1.89.5: builds an editor session for one of this database's own
+    // themes (same slot layout the Themes screen's editor uses).
+    fun dbThemeEditorState(
+        theme: CustomTheme,
+        title: String,
+        saveLabel: String,
+        onSave: (String, String) -> Unit
+    ): ThemeEditorState {
+        val parsed = parseCustomThemeSlots(theme.colors)
+        val dividerHex = theme.colors.split(",")
+            .getOrNull(14)?.trim().orEmpty().ifBlank { "auto" }
+        val quoteBgHex = theme.colors.split(",")
+            .getOrNull(16)?.trim().orEmpty().ifBlank { "000000" }
+        return ThemeEditorState(
+            title = title,
+            initialName = theme.name,
+            initialSlots = parsed.fixed + dividerHex + quoteBgHex,
+            initialNameColors = parsed.nameColors,
+            initialBracketColors = defaultBracketHexes(
+                parsed.bracketColors,
+                parsed.nameColors,
+                parsed.bracketsSingle,
+                parsed.fixed.getOrNull(0).orEmpty()
+            ),
+            initialActionOverridesName = parsed.actionOverridesName,
+            initialColorMessageWithSpeaker = parsed.colorMessageWithSpeaker,
+            saveLabel = saveLabel,
+            onSave = onSave
+        )
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -3782,6 +3870,130 @@ private fun DbThemeRow(
                         }
                     }
                 }
+            }
+            // v1.89.5: this database's own themes — the theme carried in
+            // the database file and the user's per-database themes, each
+            // promotable into the main theme catalog.
+            Text(
+                text = "Themes for this database",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            if (builtInTheme != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Built-in — ${builtInTheme.name}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Carried inside the database file — " +
+                                "this database's default theme.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    TextButton(
+                        onClick = {
+                            promoteMessage = onPromoteTheme(dbBuiltInThemeId(db.id))
+                        },
+                        enabled = config.themeEnabled
+                    ) { Text("Add to my themes") }
+                }
+            }
+            dbUserThemes.forEachIndexed { index, theme ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Text(
+                        text = theme.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = {
+                            promoteMessage = onPromoteTheme(dbUserThemeId(db.id, index))
+                        },
+                        enabled = config.themeEnabled
+                    ) { Text("Add to my themes") }
+                    IconButton(
+                        onClick = {
+                            themeEditor = dbThemeEditorState(
+                                theme = theme,
+                                title = "Edit theme for ${db.label}",
+                                saveLabel = "Save changes",
+                                onSave = { name, colors ->
+                                    onUpdateDbUserTheme(index, name, colors)
+                                }
+                            )
+                        },
+                        enabled = config.themeEnabled
+                    ) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit theme")
+                    }
+                    IconButton(
+                        onClick = { onDeleteDbUserTheme(index) },
+                        enabled = config.themeEnabled
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete theme")
+                    }
+                }
+            }
+            TextButton(
+                onClick = {
+                    // Seed the editor from the database's current look
+                    // (its built-in or site theme) when there is one.
+                    val seedPreset = builtInTheme
+                        ?: ThemePresets.find { it.id == siteThemeId }
+                    themeEditor = if (seedPreset != null) {
+                        dbThemeEditorState(
+                            theme = CustomTheme("", seedPreset.toThemeCsv()),
+                            title = "New theme for ${db.label}",
+                            saveLabel = "Add theme",
+                            onSave = { name, colors ->
+                                val newId = onAddDbUserTheme(name, colors)
+                                onConfigChange(config.copy(themeId = newId))
+                            }
+                        )
+                    } else {
+                        ThemeEditorState(
+                            title = "New theme for ${db.label}",
+                            initialName = "",
+                            initialSlots = listOf(
+                                "000000", "2B2B2B", "008CFF", "FFFFFF", "F2F2F2",
+                                "008CFF", DEFAULT_RATING_HEX, "auto",
+                                DEFAULT_NICK_BRACKETS_HEX
+                            ),
+                            initialNameColors = DefaultNickNameColors.map {
+                                it.toString(16).takeLast(6).uppercase()
+                            },
+                            initialBracketColors = DefaultNickNameColors.map {
+                                val tinted = defaultBracketTint(it, true)
+                                "%06X".format(tinted and 0xFFFFFFL)
+                            },
+                            initialActionOverridesName = true,
+                            initialColorMessageWithSpeaker = false,
+                            saveLabel = "Add theme",
+                            onSave = { name, colors ->
+                                val newId = onAddDbUserTheme(name, colors)
+                                onConfigChange(config.copy(themeId = newId))
+                            }
+                        )
+                    }
+                },
+                enabled = config.themeEnabled
+            ) { Text("Add your own theme for this database") }
+            promoteMessage?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -3967,6 +4179,10 @@ private fun DbThemeRow(
             }
             Spacer(Modifier.height(4.dp))
         }
+    }
+    // v1.89.5: the shared custom-theme editor for this database's themes.
+    themeEditor?.let { state ->
+        ThemeEditorDialog(state = state, onDismiss = { themeEditor = null })
     }
 }
 

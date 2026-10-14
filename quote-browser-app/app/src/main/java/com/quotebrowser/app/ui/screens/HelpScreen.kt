@@ -45,6 +45,13 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.5", listOf(
+            "Databases can now carry their own site theme, built right into the database file — FML and FML Spicy do. If you installed them before, update them in Settings → Databases to pick up their themes",
+            "Make a database your own: in Settings → Database themes, each database gets an \"Add your own theme for this database\" — your themes live with that database and can be picked as its theme",
+            "Keep a database theme forever: every database theme (built-in or one you made) has \"Add to my themes\" — it loads into your main themes and stays usable even if you later remove the database"
+        )
+    ),
+    ChangelogEntry(
         "1.89.4", listOf(
             "New databases and plugins now come to you: on startup the app checks the Quote404 community catalogs on GitHub and offers anything new — databases, plugins, and plugin updates — in one list. Nothing ever installs without your tap, and \"Not now\" keeps it quiet until a newer version is published",
             "Check any time yourself: \"Check for new databases & plugins\" is in Settings (Databases section), Settings → Databases, and the Plugins screen",

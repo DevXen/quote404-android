@@ -640,18 +640,34 @@ sealed interface ThemeOption {
 }
 
 /**
- * v1.88.23: grouped options for the per-database theme pickers: the
- * "Site default" entry first, then the labeled preset groups
- * (alphabetical within each group), then custom and plugin themes.
- * Both the Settings dropdown and the quick theme dialog render [Header]
- * entries as disabled section labels.
+ * v1.89.5: grouped options for the per-database theme pickers: the
+ * "Site default" entry first, then the database's own carried themes
+ * (its built-in site theme and the user's per-database themes, when the
+ * caller supplies them), then the labeled preset groups (alphabetical
+ * within each group), then custom and plugin themes. Both the Settings
+ * dropdown and the quick theme dialog render [Header] entries as
+ * disabled section labels.
  */
 fun groupedDbThemeOptions(
     siteDefaultLabel: String,
     customThemes: List<CustomTheme>,
-    pluginThemeOptions: List<Pair<String, String>>
+    pluginThemeOptions: List<Pair<String, String>>,
+    /** (themeId, theme name) of the theme carried inside the database file. */
+    builtInTheme: Pair<String, String>? = null,
+    /** (themeId, theme name) of the user's own themes for this database. */
+    dbUserThemeOptions: List<Pair<String, String>> = emptyList()
 ): List<ThemeOption> = buildList {
     add(ThemeOption.Item("", siteDefaultLabel))
+    if (builtInTheme != null) {
+        add(ThemeOption.Header("Built into this database"))
+        add(ThemeOption.Item(builtInTheme.first, "Built-in — ${builtInTheme.second}"))
+    }
+    if (dbUserThemeOptions.isNotEmpty()) {
+        add(ThemeOption.Header("Themes for this database"))
+        dbUserThemeOptions.forEach { (id, name) ->
+            add(ThemeOption.Item(id, name))
+        }
+    }
     themeGroups().forEach { group ->
         add(ThemeOption.Header(group.label))
         group.presets.forEach { add(ThemeOption.Item(it.id, it.name)) }
@@ -846,10 +862,42 @@ fun effectivePreset(
         // v1.83: plugin theme packs register their presets with the
         // PluginManager; pack data is read-only so no per-preset overrides.
         com.quotebrowser.app.data.plugins.PluginManager.themePresets[themeId]
+    } else if (themeId.startsWith("dbtheme:") || themeId.startsWith("dbuser:")) {
+        // v1.89.5: themes carried inside database files ("dbtheme:") and
+        // the user's per-database themes ("dbuser:") are materialized by
+        // DatabaseManager into the DbThemeRegistry; the data itself is
+        // read-only here so no per-preset overrides apply.
+        com.quotebrowser.app.data.DbThemeRegistry.presets[themeId]
     } else {
         ThemePresets.find { it.id == themeId }
             ?.withOverride(builtInOverrides[themeId])
     }
+
+/**
+ * v1.89.5: serializes a preset into the custom-theme CSV format (the same
+ * slot order the theme editor writes and [parseCustomThemeSlots] reads),
+ * so a preset — e.g. a theme carried inside a database — can be stored as
+ * a regular user theme in the main catalog.
+ */
+fun ThemePreset.toThemeCsv(): String {
+    fun Long.rgb(): String = "%06X".format(this and 0xFFFFFFL)
+    fun Long.rgbOrNone(): String = if (this == 0L) "none" else rgb()
+    return listOf(
+        background.rgb(), surface.rgb(), primary.rgb(),
+        onBackground.rgb(), onSurface.rgb(), number.rgb(),
+        rating.rgb(), ratingText.rgb(), nickBrackets.rgbOrNone(),
+        // CSV position 9: legacy single name slot (always blank now).
+        "",
+        nickAction.rgbOrNone(),
+        if (nickNames.isEmpty()) "-" else nickNames.joinToString(";") { it.rgb() },
+        if (actionOverridesName) "1" else "0",
+        if (nickBracketPalette.isEmpty()) "-" else nickBracketPalette.joinToString(";") { it.rgb() },
+        divider.rgbOrNone(),
+        if (colorMessageWithSpeaker) "1" else "0",
+        // CSV position 16: quote background.
+        quoteBackground.rgb()
+    ).joinToString(",")
+}
 
 /**
  * v1.55: the "Quote background" color for [themeId] — the surface behind

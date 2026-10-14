@@ -45,6 +45,13 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.4", listOf(
+            "New databases and plugins now come to you: on startup the app checks the Quote404 community catalogs on GitHub and offers anything new — databases, plugins, and plugin updates — in one list. Nothing ever installs without your tap, and \"Not now\" keeps it quiet until a newer version is published",
+            "Check any time yourself: \"Check for new databases & plugins\" is in Settings (Databases section), Settings → Databases, and the Plugins screen",
+            "Plugins screen gains an \"Available on GitHub\" section: browse the community catalog — every plugin shows its author — and install or update with one tap"
+        )
+    ),
+    ChangelogEntry(
         "1.89.3", listOf(
             "Fixed two bundled sample plugins that showed as broken — Sample Export Styles and Sample Voice Pack load properly again",
             "Five new bundled sample plugins to play with (Settings → Plugins): Arcade After Dark theme pack (CRT Terminal and Synthwave Sunset), Poster & Print export styles (Movie Poster and Clean Print), Dramatic Voices for read-aloud (Trailer Narrator, Chipmunk, Midnight Radio), Stoic Mornings quote pack (25 Stoic classics), and the Big Print layout pack — extra-large type and high contrast for easy reading"

@@ -1335,6 +1335,45 @@ object PluginManager {
     }
 
     /**
+     * v1.89.4: stage pack zip BYTES (the community-catalog download
+     * path) — the same validation and already-installed collision check
+     * as [stagePackZip], minus the content resolver. Pair with
+     * [installStagedPack] + [discardStagedPack] exactly like a picked
+     * zip.
+     */
+    fun stagePackBytes(
+        context: Context,
+        bytes: ByteArray
+    ): Pair<StagedPack?, String?> {
+        return try {
+            stagePackStream(context.applicationContext, bytes.inputStream())
+        } catch (e: Exception) {
+            Log.w(TAG, "catalog zip staging failed", e)
+            null to "Import failed: ${e.message}"
+        }
+    }
+
+    /**
+     * v1.89.4: stage pack zip bytes as an update of [expectedId] — the
+     * same staging [checkForUpdate] uses (no collision check, the pack
+     * id must match). Apply the result through [applyUpdate] with an
+     * [UpdateCheck] in state AVAILABLE; the enabled flag survives.
+     */
+    fun stagePackBytesForUpdate(
+        context: Context,
+        bytes: ByteArray,
+        expectedId: String
+    ): Pair<StagedPack?, String?> {
+        val (entries, readError) = readZipEntries(bytes.inputStream())
+        if (entries == null) {
+            return null to (readError ?: "Could not read the zip")
+        }
+        return synchronized(scanLock) {
+            stageEntriesForUpdate(context.applicationContext, entries, expectedId)
+        }
+    }
+
+    /**
      * Install a user-approved staged pack into the plugins dir, then
      * rescan. Returns null on success or a human-readable error.
      * Always call [discardStagedPack] after (it is idempotent).

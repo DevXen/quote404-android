@@ -136,6 +136,7 @@ import androidx.navigation.navArgument
 import androidx.compose.foundation.layout.Column
 import com.quotebrowser.app.data.BattleStore
 import com.quotebrowser.app.data.DatabaseManager
+import com.quotebrowser.app.data.NewContentOffer
 import com.quotebrowser.app.data.QuoteListStore
 import com.quotebrowser.app.data.SourcedQuote
 import com.quotebrowser.app.ui.components.DbSwitcher
@@ -150,6 +151,7 @@ import com.quotebrowser.app.ui.screens.CategoriesScreen
 import com.quotebrowser.app.ui.screens.DailyChallengeScreen
 import com.quotebrowser.app.ui.screens.DatabaseOrderScreen
 import com.quotebrowser.app.ui.screens.DatabaseSetupScreen
+import com.quotebrowser.app.ui.screens.NewContentScreen
 import com.quotebrowser.app.ui.screens.DatabasesScreen
 import com.quotebrowser.app.ui.screens.DeckScreen
 import com.quotebrowser.app.ui.screens.DetailScreen
@@ -212,7 +214,9 @@ import com.quotebrowser.app.ui.screens.games.LineScrambleGameScreen
 import com.quotebrowser.app.ui.screens.games.BlitzWhoSaidItGameScreen
 import com.quotebrowser.app.ui.screens.games.RatingGuessGameScreen
 import com.quotebrowser.app.ui.screens.NickVsNickScreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private object Routes {
     const val BROWSE = "browse"
@@ -679,6 +683,59 @@ fun AppNav(
         if (pendingOpenDatabases && !showDbSetup) {
             pendingOpenDatabases = false
             navController.navigate(Routes.DATABASES) { launchSingleTop = true }
+        }
+    }
+
+    // v1.89.4: community-catalog offer. The startup background check
+    // publishes new databases / plugins / plugin updates into
+    // manager.pendingNewContent; surface the offer once per cold start,
+    // only after the first-run setup gate is done. The manual check
+    // (Settings / Databases / Plugins buttons) runs the same
+    // computation on demand, ignoring dismissals.
+    var newContentOffer by remember { mutableStateOf<NewContentOffer?>(null) }
+    val startupNewContent by manager.pendingNewContent
+        .collectAsStateWithLifecycle()
+    LaunchedEffect(startupNewContent, showDbSetup) {
+        val pendingOffer = startupNewContent
+        if (pendingOffer != null && !showDbSetup &&
+            newContentOffer == null
+        ) {
+            manager.clearPendingNewContent()
+            // Re-check against current state: the user may have
+            // installed some of it (e.g. in first-run setup) since the
+            // background check ran.
+            val fresh = withContext(Dispatchers.IO) {
+                manager.revalidateNewContentOffer(pendingOffer)
+            }
+            if (!fresh.isEmpty) newContentOffer = fresh
+        }
+    }
+
+    fun runManualNewContentCheck() {
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                manager.checkForNewContent()
+            }
+            when {
+                !result.fetched -> snackbarHostState.showSnackbar(
+                    "Couldn't check (offline?)"
+                )
+                result.offer.isEmpty -> snackbarHostState.showSnackbar(
+                    "You're up to date — nothing new."
+                )
+                else -> {
+                    val fresh = withContext(Dispatchers.IO) {
+                        manager.revalidateNewContentOffer(result.offer)
+                    }
+                    if (fresh.isEmpty) {
+                        snackbarHostState.showSnackbar(
+                            "You're up to date — nothing new."
+                        )
+                    } else {
+                        newContentOffer = fresh
+                    }
+                }
+            }
         }
     }
 
@@ -1665,14 +1722,17 @@ fun AppNav(
                     onSpeakerVoicesClick = { navController.navigate(Routes.SPEAKER_VOICES) },
                     // v1.83: plugin packs.
                     onPluginsClick = { navController.navigate(Routes.PLUGINS) },
-                    onLayoutEditorClick = { navController.navigate(Routes.LAYOUT_EDITOR) }
+                    onLayoutEditorClick = { navController.navigate(Routes.LAYOUT_EDITOR) },
+                    // v1.89.4: manual "what's new" check (community catalogs).
+                    onCheckNewContentClick = { runManualNewContentCheck() }
                 )
             }
             // v1.83: plugin pack management.
             composable(Routes.PLUGINS) {
                 PluginsScreen(
                     manager = manager,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onCheckNewContentClick = { runManualNewContentCheck() }
                 )
             }
             // v1.85: custom HTML/CSS style editor.
@@ -2121,7 +2181,8 @@ fun AppNav(
                 DatabasesScreen(
                     manager = manager,
                     onMyDatabasesClick = { navController.navigate(Routes.USER_DBS) },
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onCheckNewContentClick = { runManualNewContentCheck() }
                 )
             }
             composable(
@@ -2254,5 +2315,17 @@ fun AppNav(
                 pendingOpenDatabases = true
             }
         )
+    }
+
+    // v1.89.4: community-catalog offer (startup or manual check),
+    // drawn over the main UI once the setup gate is done.
+    if (!showDbSetup) {
+        newContentOffer?.let { offer ->
+            NewContentScreen(
+                manager = manager,
+                offer = offer,
+                onClose = { newContentOffer = null }
+            )
+        }
     }
 }

@@ -398,7 +398,9 @@ fun SettingsScreen(
     /** v1.83: opens the Plugins screen. */
     onPluginsClick: () -> Unit = {},
     /** v1.85: opens the custom HTML/CSS layout editor. */
-    onLayoutEditorClick: () -> Unit = {}
+    onLayoutEditorClick: () -> Unit = {},
+    /** v1.89.4: manual "what's new" check against the community catalogs. */
+    onCheckNewContentClick: () -> Unit = {}
 ) {
     val showNumber by vm.showQuoteNumber.collectAsStateWithLifecycle()
     val showRating by vm.showRating.collectAsStateWithLifecycle()
@@ -2244,6 +2246,23 @@ fun SettingsScreen(
                                                         )
                                                         Button(onClick = onDatabasesClick) {
                                                             Text("Manage")
+                                                        }
+                                                    }
+                                                    // v1.89.4: manual check of the community
+                                                    // catalogs for new databases / plugins.
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            "New databases & plugins",
+                                                            style = MaterialTheme.typography.titleSmall,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                        Button(onClick = onCheckNewContentClick) {
+                                                            Text("Check")
                                                         }
                                                     }
                                                     // v1.55: "Show collection dates" removed — dates no

@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -32,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quotebrowser.app.data.DatabaseManager
+import com.quotebrowser.app.data.PluginCatalogEntry
 import com.quotebrowser.app.data.plugins.PluginManager
 import com.quotebrowser.app.ui.components.EmptyState
 import com.quotebrowser.app.ui.components.ScreenHeader
@@ -96,7 +99,9 @@ private fun pluginPermissionLabel(permission: String): String = when (permission
 @Composable
 fun PluginsScreen(
     manager: DatabaseManager,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    // v1.89.4: manual "what's new" check (community catalogs).
+    onCheckNewContentClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -115,6 +120,55 @@ fun PluginsScreen(
     var checkingIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var applyingIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var settingsTarget by remember { mutableStateOf<PluginManager.PluginInfo?>(null) }
+
+    // v1.89.4: community catalog (GitHub "plugins" release) — packs
+    // that aren't installed yet, and catalog updates for installed
+    // ones. Refreshed in the background when the screen opens; the
+    // cached catalog is used either way (offline-safe).
+    var pluginCatalog by remember {
+        mutableStateOf<List<PluginCatalogEntry>>(emptyList())
+    }
+    var catalogInstallingIds by remember {
+        mutableStateOf<Set<String>>(emptySet())
+    }
+    var catalogProgress by remember {
+        mutableStateOf<Map<String, Float>>(emptyMap())
+    }
+    var catalogErrors by remember {
+        mutableStateOf<Map<String, String>>(emptyMap())
+    }
+
+    LaunchedEffect(Unit) {
+        pluginCatalog = manager.pluginCatalogEntries()
+        withContext(Dispatchers.IO) { manager.refreshPluginCatalog() }
+        pluginCatalog = manager.pluginCatalogEntries()
+    }
+
+    /** v1.89.4: download + install (or update) one catalog plugin. */
+    fun installCatalogEntry(entry: PluginCatalogEntry) {
+        if (entry.id in catalogInstallingIds) return
+        catalogInstallingIds = catalogInstallingIds + entry.id
+        catalogErrors = catalogErrors - entry.id
+        scope.launch {
+            val result = manager.installCatalogPlugin(entry) { d, total ->
+                val fraction =
+                    if (total > 0) (d.toFloat() / total).coerceIn(0f, 1f)
+                    else 0f
+                catalogProgress = catalogProgress + (entry.id to fraction)
+            }
+            catalogInstallingIds = catalogInstallingIds - entry.id
+            catalogProgress = catalogProgress - entry.id
+            result.onSuccess {
+                Toast.makeText(
+                    context, "\"${entry.name}\" installed",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }.onFailure { e ->
+                catalogErrors = catalogErrors +
+                    (entry.id to (e.message ?: "Install failed."))
+            }
+        }
+    }
 
     fun toast(msg: String) =
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
@@ -334,6 +388,12 @@ fun PluginsScreen(
                     enabled = !staging && !installing
                 ) { Text("Import pack (.zip)") }
             }
+            item {
+                OutlinedButton(
+                    onClick = onCheckNewContentClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Check for new databases & plugins") }
+            }
             if (plugins.isEmpty()) {
                 item {
                     EmptyState(
@@ -384,6 +444,157 @@ fun PluginsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            // v1.89.4: community catalog — packs on GitHub that aren't
+            // installed yet (bundled samples match by id and never show
+            // here), plus catalog updates for installed packs.
+            val installedById = plugins.associateBy { it.manifest.id }
+            val catalogUpdates = pluginCatalog.filter { e ->
+                val inst = installedById[e.id] ?: return@filter false
+                inst.manifest.version.isNotBlank() &&
+                    PluginManager.compareVersions(
+                        e.version, inst.manifest.version
+                    ) > 0
+            }
+            val catalogAvailable = pluginCatalog.filter {
+                it.id !in installedById
+            }
+            if (catalogUpdates.isNotEmpty() || catalogAvailable.isNotEmpty()) {
+                item {
+                    Column(Modifier.padding(top = 8.dp)) {
+                        Text(
+                            "Available on GitHub",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Community plugins from the Quote404 catalog. " +
+                                "Installing downloads the pack from GitHub " +
+                                "and adds it here.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                items(catalogUpdates, key = { "catup:" + it.id }) { entry ->
+                    CatalogPluginRow(
+                        entry = entry,
+                        installedVersion = installedById[entry.id]
+                            ?.manifest?.version,
+                        installing = entry.id in catalogInstallingIds,
+                        progressFraction = catalogProgress[entry.id],
+                        error = catalogErrors[entry.id],
+                        onInstall = { installCatalogEntry(entry) }
+                    )
+                }
+                items(catalogAvailable, key = { "cat:" + it.id }) { entry ->
+                    CatalogPluginRow(
+                        entry = entry,
+                        installedVersion = null,
+                        installing = entry.id in catalogInstallingIds,
+                        progressFraction = catalogProgress[entry.id],
+                        error = catalogErrors[entry.id],
+                        onInstall = { installCatalogEntry(entry) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * v1.89.4: one row of the Plugins screen's "Available on GitHub"
+ * section — a catalog plugin that isn't installed yet, or an update
+ * for an installed one ([installedVersion] non-null).
+ */
+@Composable
+private fun CatalogPluginRow(
+    entry: PluginCatalogEntry,
+    installedVersion: String?,
+    installing: Boolean,
+    progressFraction: Float?,
+    error: String?,
+    onInstall: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        entry.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        buildString {
+                            if (entry.author.isNotBlank()) {
+                                append("by ${entry.author}")
+                            }
+                            if (entry.version.isNotBlank()) {
+                                if (isNotEmpty()) append(" · ")
+                                append("v${entry.version}")
+                            }
+                        }.ifBlank { pluginTypeLabel(entry.type) },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (installing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Button(onClick = onInstall) {
+                        Text(
+                            if (installedVersion != null) "Update"
+                            else "Install"
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Type: ${pluginTypeLabel(entry.type)} · " +
+                    formatDbSize(entry.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (installedVersion != null) {
+                Text(
+                    "Update available → v${entry.version} " +
+                        "(installed: v$installedVersion)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (entry.description.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    entry.description,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            if (progressFraction != null) {
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { progressFraction },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (error != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }

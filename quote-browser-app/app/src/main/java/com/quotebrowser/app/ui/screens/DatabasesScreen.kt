@@ -87,7 +87,9 @@ internal fun formatDbCount(count: Long): String =
 fun DatabasesScreen(
     manager: DatabaseManager,
     onMyDatabasesClick: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    // v1.89.4: manual "what's new" check (community catalogs).
+    onCheckNewContentClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -292,6 +294,19 @@ fun DatabasesScreen(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
+                }
+            }
+
+            // v1.89.4: manual check of the community catalogs (new
+            // databases, new plugins, plugin updates).
+            item {
+                OutlinedButton(
+                    onClick = onCheckNewContentClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text("Check for new databases & plugins")
                 }
             }
 

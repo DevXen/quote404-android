@@ -86,6 +86,79 @@ data class CatalogEntry(
     val id: String get() = "asset:$file"
 }
 
+/**
+ * v1.89.4: one plugin from the online community catalog (the
+ * plugins.json published with the GitHub "plugins" release). Fully
+ * catalog-driven like the databases — new plugins arrive by catalog
+ * updates only, and every entry carries its own author.
+ */
+data class PluginCatalogEntry(
+    val id: String,
+    val name: String,
+    val author: String,
+    /** PluginManager pack type ("quote-pack", "theme-pack", ...). */
+    val type: String,
+    val version: String,
+    val apiVersion: Int,
+    val description: String,
+    /** Zip file name in the catalog (resolved into [downloadUrl]). */
+    val file: String,
+    val sha256: String,
+    val size: Long,
+    /** Absolute URL the zip downloads from (catalog-relative resolved). */
+    val downloadUrl: String
+)
+
+/**
+ * v1.89.4: what a "what's new" check found in the community catalogs —
+ * databases and plugins that could be installed, plus updates for
+ * installed plugins. Installed-database updates are NOT here: the
+ * startup pass already applies those silently.
+ */
+data class NewContentOffer(
+    val newDatabases: List<CatalogEntry> = emptyList(),
+    val newPlugins: List<PluginCatalogEntry> = emptyList(),
+    val pluginUpdates: List<PluginCatalogEntry> = emptyList()
+) {
+    val isEmpty: Boolean
+        get() = newDatabases.isEmpty() && newPlugins.isEmpty() &&
+            pluginUpdates.isEmpty()
+
+    /** Combined download size of everything in the offer. */
+    val totalSize: Long
+        get() = newDatabases.sumOf { it.size } +
+            newPlugins.sumOf { it.size } +
+            pluginUpdates.sumOf { it.size }
+
+    /** Stable per-item keys ("kind:id:version") for dismissal memory. */
+    fun dismissalKeys(): List<String> =
+        newDatabases.map { "db:${it.file}:${it.revision}" } +
+            newPlugins.map { "plugin:${it.id}:${it.version}" } +
+            pluginUpdates.map { "plugin-update:${it.id}:${it.version}" }
+
+    /** This offer minus the items whose dismissal key is in [dismissed]. */
+    fun excludingDismissed(dismissed: Set<String>): NewContentOffer =
+        NewContentOffer(
+            newDatabases = newDatabases.filter {
+                "db:${it.file}:${it.revision}" !in dismissed
+            },
+            newPlugins = newPlugins.filter {
+                "plugin:${it.id}:${it.version}" !in dismissed
+            },
+            pluginUpdates = pluginUpdates.filter {
+                "plugin-update:${it.id}:${it.version}" !in dismissed
+            }
+        )
+}
+
+/** v1.89.4: the outcome of a "what's new" check. [fetched] is false
+ * when neither catalog could be downloaded (offline etc.) — the offer
+ * is then computed from the cached catalogs and may be stale. */
+data class NewContentCheck(
+    val offer: NewContentOffer,
+    val fetched: Boolean
+)
+
 /** v1.89.1: outcome of loading a user-picked .db file from storage. */
 sealed class DbFileLoad {
     /** The picked file's name matched a catalog database and the file
@@ -586,6 +659,28 @@ class DatabaseManager private constructor(private val appContext: Context) {
          * the setup / manager screens) work offline. */
         private const val KEY_DB_CATALOG_CACHE = "db_catalog_cache_v1"
 
+        /**
+         * v1.89.4: the community plugin catalog lives in the public
+         * GitHub "plugins" release, next to the databases release. No
+         * override pref — the plugin catalog is one shared community
+         * source.
+         */
+        const val DEFAULT_PLUGIN_CATALOG_URL =
+            "https://github.com/DevXen/quote404-android/releases/download/" +
+                "plugins/plugins.json"
+
+        /** v1.89.4: raw plugins.json cached in prefs (Plugins screen
+         * works offline). */
+        private const val KEY_PLUGIN_CATALOG_CACHE = "plugin_catalog_cache_v1"
+
+        /** v1.89.4: "kind:id:version" keys of new-content offers the
+         * user dismissed with "Not now" — a newer version re-offers. */
+        private const val KEY_NEW_CONTENT_DISMISSED = "new_content_dismissed_v1"
+
+        /** v1.89.4: plugin zips are capped like PluginManager's own
+         * pack-import cap (packs are JSON data). */
+        private const val MAX_PLUGIN_DOWNLOAD_BYTES = 64L * 1024 * 1024
+
         /** v1.89: one-time stamp for the bundled→downloaded migration. */
         private const val KEY_DL_MIGRATION_DONE = "dl_migration_v1_done"
 
@@ -894,6 +989,16 @@ class DatabaseManager private constructor(private val appContext: Context) {
                         Thread.currentThread().priority = Thread.NORM_PRIORITY
                     } catch (_: Exception) {
                     }
+                }
+                // v1.89.4: community catalogs — with updates applied,
+                // look for NEW databases and plugins (and plugin
+                // updates) and publish the offer for AppNav to surface
+                // once this cold start. Dismissed items stay quiet;
+                // nothing here installs without the user's tap.
+                try {
+                    publishStartupNewContent()
+                } catch (t: Throwable) {
+                    Log.w("QuoteBrowser", "new-content startup check failed", t)
                 }
             }
         }
@@ -5500,6 +5605,335 @@ class DatabaseManager private constructor(private val appContext: Context) {
             }
         }
         return outcomes
+    }
+
+    // ------------------------------------------------------------------
+    // v1.89.4: the community plugin catalog + "what's new" checks.
+    //
+    // Plugins install from the public GitHub "plugins" release
+    // (plugins.json + one zip per plugin, plugin.json at the zip root).
+    // The catalog is community-driven: entries carry their own author
+    // and new plugins arrive by catalog updates only — nothing about
+    // the plugin list is hardcoded here. Downloads are sha256-verified
+    // and installed through PluginManager's existing staged-install /
+    // staged-update machinery, so catalog installs get the same
+    // validation as a hand-imported zip.
+    // ------------------------------------------------------------------
+
+    /** The startup offer published by [publishStartupNewContent] and
+     * surfaced by AppNav as the new-content overlay (once per cold
+     * start, after the first-run setup gate is done). */
+    private val _pendingNewContent = MutableStateFlow<NewContentOffer?>(null)
+    val pendingNewContent: StateFlow<NewContentOffer?> =
+        _pendingNewContent as StateFlow<NewContentOffer?>
+
+    fun clearPendingNewContent() {
+        _pendingNewContent.value = null
+    }
+
+    /** Parses plugins.json into catalog entries, resolving each zip's
+     * download URL against [catalogUrl] (same rule as the databases
+     * manifest). */
+    private fun parsePluginCatalog(
+        catalogText: String,
+        catalogUrl: String
+    ): List<PluginCatalogEntry> {
+        val root = try {
+            JSONObject(catalogText)
+        } catch (e: Exception) {
+            return emptyList()
+        }
+        val plugins = root.optJSONObject("plugins") ?: return emptyList()
+        val out = mutableListOf<PluginCatalogEntry>()
+        val keys = plugins.keys()
+        while (keys.hasNext()) {
+            val id = keys.next()
+            val e = plugins.optJSONObject(id) ?: continue
+            val file = e.optString("file", "").trim().ifEmpty { "$id.zip" }
+            val resolved = try {
+                java.net.URL(java.net.URL(catalogUrl), file).toString()
+            } catch (ex: Exception) {
+                continue
+            }
+            out += PluginCatalogEntry(
+                id = id,
+                name = e.optString("name", "").trim().ifEmpty { id },
+                author = e.optString("author", "").trim(),
+                type = e.optString("type", "").trim(),
+                version = e.optString("version", "").trim(),
+                apiVersion = e.optInt("apiVersion", 0),
+                description = e.optString("description", "").trim(),
+                file = file,
+                sha256 = e.optString("sha256", "").trim(),
+                size = e.optLong("size", 0),
+                downloadUrl = resolved
+            )
+        }
+        return out.sortedBy { it.name.lowercase() }
+    }
+
+    /**
+     * The plugin catalog from the last successful fetch (cached in
+     * prefs), so the Plugins screen works offline. Empty when the
+     * catalog has never been fetched.
+     */
+    fun pluginCatalogEntries(): List<PluginCatalogEntry> {
+        val cached = prefs.getString(KEY_PLUGIN_CATALOG_CACHE, null)
+        if (cached.isNullOrBlank()) return emptyList()
+        return parsePluginCatalog(cached, DEFAULT_PLUGIN_CATALOG_URL)
+    }
+
+    /**
+     * Fetches plugins.json (blocking — call off the main thread),
+     * caches the raw JSON in prefs on success, and returns the parsed
+     * catalog. Returns null on any failure; the cache is left untouched.
+     */
+    fun refreshPluginCatalog(): List<PluginCatalogEntry>? {
+        val text = try {
+            downloadText(DEFAULT_PLUGIN_CATALOG_URL, MAX_MANIFEST_BYTES)
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "plugin catalog fetch failed", e)
+            return null
+        }
+        val parsed = parsePluginCatalog(text, DEFAULT_PLUGIN_CATALOG_URL)
+        if (parsed.isEmpty()) return null
+        prefs.edit().putString(KEY_PLUGIN_CATALOG_CACHE, text).apply()
+        return parsed
+    }
+
+    /** Catalog plugin entries whose version is newer than the installed
+     * pack of the same id. */
+    private fun pluginUpdateEntries(
+        catalog: List<PluginCatalogEntry>,
+        installedById: Map<String, PluginManager.PluginInfo>
+    ): List<PluginCatalogEntry> = catalog.filter { e ->
+        val inst = installedById[e.id] ?: return@filter false
+        val installedVersion = inst.manifest.version
+        installedVersion.isNotBlank() &&
+            PluginManager.compareVersions(e.version, installedVersion) > 0
+    }
+
+    /**
+     * v1.89.4: fetch both community catalogs and compute what's new:
+     * databases not installed yet, plugins not installed yet, and
+     * updates for installed plugins. Installed-database updates are
+     * deliberately excluded — the startup pass applies those silently.
+     * Blocking (network) — call off the main thread. Never throws: on
+     * fetch failure the cached catalogs are used and [NewContentCheck]
+     * .fetched reports false when neither catalog downloaded.
+     */
+    fun checkForNewContent(): NewContentCheck {
+        val dbFresh = try {
+            refreshCatalog()
+        } catch (e: Exception) {
+            null
+        }
+        val dbEntries = dbFresh ?: catalogEntries()
+        val pluginFresh = try {
+            refreshPluginCatalog()
+        } catch (e: Exception) {
+            null
+        }
+        val pluginEntries = pluginFresh ?: pluginCatalogEntries()
+        val installedById = PluginManager.plugins.value
+            .associateBy { it.manifest.id }
+        // Never offer a plugin this app version cannot load.
+        val loadable = pluginEntries.filter {
+            it.apiVersion in 1..PluginManager.PLUGIN_API_VERSION
+        }
+        val offer = NewContentOffer(
+            newDatabases = dbEntries.filter { !isCatalogDbInstalled(it.file) },
+            newPlugins = loadable.filter { it.id !in installedById },
+            pluginUpdates = pluginUpdateEntries(loadable, installedById)
+        )
+        return NewContentCheck(
+            offer = offer,
+            fetched = dbFresh != null || pluginFresh != null
+        )
+    }
+
+    /**
+     * Recompute an offer against CURRENT local state without any
+     * network: drops databases installed since the offer was computed
+     * (e.g. picked in first-run setup after the startup check ran) and
+     * plugins installed or updated since. Used right before the offer
+     * is shown.
+     */
+    fun revalidateNewContentOffer(offer: NewContentOffer): NewContentOffer {
+        val installedById = PluginManager.plugins.value
+            .associateBy { it.manifest.id }
+        return NewContentOffer(
+            newDatabases = offer.newDatabases
+                .filter { !isCatalogDbInstalled(it.file) },
+            newPlugins = offer.newPlugins
+                .filter { it.id !in installedById },
+            pluginUpdates = pluginUpdateEntries(
+                offer.pluginUpdates, installedById
+            )
+        )
+    }
+
+    /** Dismissal memory for startup offers ("kind:id:version" keys). */
+    private fun dismissedNewContentKeys(): Set<String> =
+        prefs.getStringSet(KEY_NEW_CONTENT_DISMISSED, emptySet())
+            ?: emptySet()
+
+    /** Remember offer items as dismissed (the "Not now" action). A
+     * newer catalog version produces a new key and re-offers. */
+    fun dismissNewContent(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        val updated = dismissedNewContentKeys() + keys
+        prefs.edit()
+            .putStringSet(KEY_NEW_CONTENT_DISMISSED, updated)
+            .apply()
+    }
+
+    /**
+     * The startup half of the "what's new" check, run on the startup
+     * background thread AFTER the migration + auto-update pass: compute
+     * the offer, drop dismissed items, and publish what remains for
+     * AppNav to surface once per cold start. Silent on failure — the
+     * manual check in Settings is the loud path.
+     */
+    fun publishStartupNewContent() {
+        try {
+            // The plugin scan runs on its own startup thread; make sure
+            // it has landed before judging what's "not installed".
+            if (PluginManager.plugins.value.isEmpty()) {
+                PluginManager.scan(appContext)
+            }
+            val check = checkForNewContent()
+            val offer = check.offer
+                .excludingDismissed(dismissedNewContentKeys())
+                .let { revalidateNewContentOffer(it) }
+            if (!offer.isEmpty) {
+                _pendingNewContent.value = offer
+            }
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "startup new-content check failed", e)
+        }
+    }
+
+    /**
+     * v1.89.4: download a catalog plugin zip and install it through
+     * PluginManager's staged machinery. When the plugin is already
+     * installed this is the update path (staged update + applyUpdate —
+     * the pack's enabled state survives); otherwise it's the staged
+     * fresh install. The zip is sha256-verified before anything is
+     * staged. Progress reports (bytes done, total bytes) — the total
+     * falls back to the catalog size when the server sends no length.
+     * Runs on Dispatchers.IO.
+     */
+    suspend fun installCatalogPlugin(
+        entry: PluginCatalogEntry,
+        onProgress: (bytesDone: Long, totalBytes: Long) -> Unit =
+            { _, _ -> }
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val tmp = File.createTempFile(
+                "plugin_install_", ".zip", appContext.cacheDir
+            )
+            try {
+                downloadToFile(
+                    entry.downloadUrl, tmp, MAX_PLUGIN_DOWNLOAD_BYTES
+                ) { done, total ->
+                    onProgress(done, if (total > 0) total else entry.size)
+                }
+                if (entry.sha256.isNotBlank() &&
+                    sha256Of(tmp) != entry.sha256.lowercase()
+                ) {
+                    return@withContext Result.failure(
+                        IllegalStateException(
+                            "Download failed verification (SHA-256 " +
+                                "mismatch) — not installed."
+                        )
+                    )
+                }
+                val bytes = tmp.readBytes()
+                val alreadyInstalled = PluginManager.plugins.value
+                    .any { it.manifest.id == entry.id }
+                if (alreadyInstalled) {
+                    val (staged, stageError) =
+                        PluginManager.stagePackBytesForUpdate(
+                            appContext, bytes, entry.id
+                        )
+                    if (staged == null) {
+                        return@withContext Result.failure(
+                            IllegalStateException(
+                                stageError ?: "That plugin couldn't " +
+                                    "be validated."
+                            )
+                        )
+                    }
+                    try {
+                        if (staged.manifest.type ==
+                            PluginManager.TYPE_QUOTE_PACK
+                        ) {
+                            evictQuoteDatabase(
+                                PluginManager.DB_ID_PREFIX + entry.id
+                            )
+                        }
+                        val error = PluginManager.applyUpdate(
+                            appContext,
+                            PluginManager.UpdateCheck(
+                                status = PluginManager.UpdateStatus
+                                    .AVAILABLE,
+                                latestVersion = staged.manifest.version,
+                                staged = staged
+                            )
+                        )
+                        if (error != null) {
+                            return@withContext Result.failure(
+                                IllegalStateException(error)
+                            )
+                        }
+                    } finally {
+                        PluginManager.discardStagedPack(staged)
+                    }
+                } else {
+                    val (staged, stageError) =
+                        PluginManager.stagePackBytes(appContext, bytes)
+                    if (staged == null) {
+                        return@withContext Result.failure(
+                            IllegalStateException(
+                                stageError ?: "That plugin couldn't " +
+                                    "be validated."
+                            )
+                        )
+                    }
+                    try {
+                        if (staged.manifest.id != entry.id) {
+                            return@withContext Result.failure(
+                                IllegalStateException(
+                                    "The downloaded pack is " +
+                                        "\"${staged.manifest.id}\", not " +
+                                        "the catalog entry — not installed."
+                                )
+                            )
+                        }
+                        val error = PluginManager.installStagedPack(
+                            appContext, staged
+                        )
+                        if (error != null) {
+                            return@withContext Result.failure(
+                                IllegalStateException(error)
+                            )
+                        }
+                    } finally {
+                        PluginManager.discardStagedPack(staged)
+                    }
+                }
+            } finally {
+                tmp.delete()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w(
+                "QuoteBrowser",
+                "installCatalogPlugin failed for ${entry.id}", e
+            )
+            Result.failure(e)
+        }
     }
 
     /**

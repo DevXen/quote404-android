@@ -7,6 +7,24 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.4 — 2026-10-14 (versionCode 180)
+
+- **Community catalogs (Clint):** plugins now install from GitHub too.
+  A `plugins` release on this repo carries plugin zips + a plugins.json
+  catalog (author, type, version, description, SHA-256 per plugin).
+  - On startup the app checks both catalogs: updates to installed
+    databases still auto-apply; NEW databases, NEW plugins, and plugin
+    updates are **offered** in a checkbox screen — nothing installs
+    without a tap. "Not now" silences that version; a newer one
+    re-offers.
+  - Settings / Databases / Plugins all have a manual "Check for new
+    databases & plugins" that ignores dismissals.
+  - The Plugins screen gains an "Available on GitHub" section with
+    author names and one-tap installs, plus update badges.
+  - Anyone can make a plugin and submit it by pull request — see
+    PLUGINS.md (new) and community-plugins/. Plugins are data packs
+    only (themes, quotes, export styles, voices, layouts), never code.
+
 ## v1.89.3 — 2026-10-13 (versionCode 179)
 
 - **Fixed the two broken sample plugins (Clint's screenshot):** the

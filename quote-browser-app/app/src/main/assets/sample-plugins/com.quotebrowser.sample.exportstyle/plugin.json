@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "type": "export-style",
   "entry": "styles.json",
-  "description": "Two sample HTML export styles bundled with QuoteBrowser 1.87+ to show how export-style packs work. Pick one in Export → HTML → Export style.",
+  "description": "Two sample HTML export styles bundled with QuoteBrowser 1.87+ to show how export-style packs work. Pick one in Export \u2192 HTML \u2192 Export style.",
   "permissions": [
     "export"
   ],
@@ -15,7 +15,7 @@
         "key": "serif_headings",
         "type": "toggle",
         "title": "Serif headings",
-        "description": "Render the page title and quote headers in a serif font. (Sample setting — it demonstrates a stored toggle; the pack's own CSS doesn't read it.)",
+        "description": "Render the page title and quote headers in a serif font. (Sample setting \u2014 it demonstrates a stored toggle; the pack's own CSS doesn't read it.)",
         "default": true
       },
       {
@@ -38,5 +38,6 @@
         "default": "Cyan"
       }
     ]
-  }
+  },
+  "apiVersion": 1
 }

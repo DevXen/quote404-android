@@ -1,0 +1,33 @@
+/* Big Print layout pack CSS: overrides the "css" field of layout.json.
+   Accessibility first: huge type, maximum contrast, wide line spacing. */
+.qb-quote {
+  font-family: Verdana, Geneva, 'DejaVu Sans', sans-serif;
+  background: #000000;
+  color: #ffffff;
+  font-size: 1.5em;
+  line-height: 2;
+  letter-spacing: 0.02em;
+  padding: 32px 30px;
+  margin: 16px 0;
+  border: 3px solid #ffffff;
+}
+.qb-site-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #ffd60a;
+  border-bottom: 2px solid #ffffff;
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+.qb-quote-text { text-align: left; line-height: 2; white-space: pre-wrap; }
+.qb-author { text-align: right; font-size: 1.15em; font-weight: bold; margin-top: 18px; color: #ffd60a; }
+.qb-divider { border: none; border-top: 2px solid #ffffff; margin: 14px 0; }
+.qb-meta { font-size: 1em; color: #e8e8e8; }
+.qb-rating { text-align: right; margin-top: 10px; font-size: 1.15em; color: #ffd60a; }
+.qb-source-url { margin-top: 14px; font-size: 1em; }
+.qb-source-url a { color: #7cc7ff; }
+.qb-branding { margin-top: 14px; font-size: 0.9em; color: #bbbbbb; text-align: center; }

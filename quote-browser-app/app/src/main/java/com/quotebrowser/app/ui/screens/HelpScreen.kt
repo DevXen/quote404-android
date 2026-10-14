@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.3", listOf(
+            "Fixed two bundled sample plugins that showed as broken — Sample Export Styles and Sample Voice Pack load properly again",
+            "Five new bundled sample plugins to play with (Settings → Plugins): Arcade After Dark theme pack (CRT Terminal and Synthwave Sunset), Poster & Print export styles (Movie Poster and Clean Print), Dramatic Voices for read-aloud (Trailer Narrator, Chipmunk, Midnight Radio), Stoic Mornings quote pack (25 Stoic classics), and the Big Print layout pack — extra-large type and high contrast for easy reading"
+        )
+    ),
+    ChangelogEntry(
         "1.89.2", listOf(
             "Export your search results: run a search (any filters, any databases) and tap \"Export results\" — it captures every match, not just what's on screen, and opens Export on the new \"Search results\" scope with all the usual formats and options (text, JSON, PDF, e-book, images, slideshow video, narrated audio, web page)",
             "The Friends theme you liked is now a regular preset — find it as \"Sunset Hangout\" in the theme list and use it anywhere. The Friends database itself gets a new default theme, \"Friends — Wall\": the same chat bubbles in a nostalgic early-Facebook wall-post look — white cards, classic Facebook blue, your lines in blue bubbles. (Picked a different theme for Friends already? Yours stays.)"

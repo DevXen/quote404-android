@@ -7,6 +7,19 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.3 — 2026-10-13 (versionCode 179)
+
+- **Fixed the two broken sample plugins (Clint's screenshot):** the
+  Sample Export Styles and Sample Voice Pack manifests were missing the
+  `apiVersion` field the plugin loader requires, so they showed as red
+  "Unknown type" error cards. Both now carry `"apiVersion": 1`.
+- **Five new bundled sample plugins** (one per type): Arcade After Dark
+  theme pack (CRT Terminal + Synthwave Sunset), Poster & Print export
+  styles (Movie Poster + Clean Print), Dramatic Voices (Trailer
+  Narrator, Chipmunk, Midnight Radio — on-device TTS presets), Stoic
+  Mornings quote pack (25 public-domain quotes: Marcus Aurelius,
+  Seneca, Epictetus), Big Print layout pack (large-type high-contrast).
+
 ## v1.89.2 — 2026-10-13 (versionCode 178)
 
 - **Export search results (Clint):** Search gains an "Export results"

@@ -5,6 +5,9 @@
   "version": "1.0.0",
   "type": "voice-pack",
   "entry": "voices.json",
-  "description": "Three sample read-aloud voices bundled with QuoteBrowser 1.87+ to show how voice packs work: two cloud voices and one built-in pitch/rate preset. Pick them in Settings → Read aloud.",
-  "permissions": ["tts"]
+  "description": "Three sample read-aloud voices bundled with QuoteBrowser 1.87+ to show how voice packs work: two cloud voices and one built-in pitch/rate preset. Pick them in Settings \u2192 Read aloud.",
+  "permissions": [
+    "tts"
+  ],
+  "apiVersion": 1
 }

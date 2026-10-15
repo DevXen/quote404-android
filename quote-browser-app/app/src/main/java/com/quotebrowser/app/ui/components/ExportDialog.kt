@@ -202,7 +202,13 @@ fun SingleQuoteExportDialog(
                                     colorizeNicks = colorizeNicks,
                                     nickPalette = nickPalette,
                                     hideTldInHeader = resolvedTheme?.hideTldInHeader == true,
-                                    watermark = watermark
+                                    watermark = watermark,
+                                    // v1.89.6: the rating format the
+                                    // database carries, so the exported
+                                    // rating text matches the screen.
+                                    ratingFormat = dbId?.let {
+                                        themeSnap.builtInDbRatingFormats[it]
+                                    }
                                 )
                             }
                         } else {

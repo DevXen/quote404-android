@@ -3474,6 +3474,11 @@ fun QuoteCardStyleDialog(
     val shareDbTotal = LocalDbTotals.current[dbId]
     // v1.58: capture date for the shared site card footer line.
     val shareServedDate = dbId?.let { LocalServedDates.current["$it/${quote.number}"] }
+    // v1.89.6: the rating format the quote's database carries in its
+    // theme spec, when it declares one.
+    val shareRatingFormat = dbId?.let {
+        LocalDbThemeSnapshots.current.builtInDbRatingFormats[it]
+    }
     // v1.53: offer the database's site theme as a card style alternative.
     // v1.61.11: the resolved theme is hoisted so the share renderers can
     // also read the per-database "hide TLD" header option.
@@ -3825,6 +3830,11 @@ fun QuoteCardStyleDialog(
                                                 // title matches the on-screen card.
                                                 hideTldInHeader = shareResolved?.hideTldInHeader
                                                     ?: false,
+                                                // v1.89.6: the rating format
+                                                // the database carries, so
+                                                // the shared card's rating
+                                                // text matches the screen.
+                                                ratingFormat = shareRatingFormat,
                                             )
                                         }
                                     }
@@ -4319,7 +4329,13 @@ fun renderSiteQuoteCard(
      * v1.61.11: the per-database "hide TLD in header" option, so the
      * export title matches the on-screen quote card.
      */
-    hideTldInHeader: Boolean = false
+    hideTldInHeader: Boolean = false,
+    /**
+     * v1.89.6: the rating format carried by the quote's database, when
+     * it declares one; null keeps the built-in per-style format (the
+     * exported rating text matches the on-screen card either way).
+     */
+    ratingFormat: String? = null
 ): Bitmap {
     // v1.61.15: slim Quote404 logo plate flush against the header — no
     // floating strip — with the logo large enough to read. The card goes
@@ -4480,7 +4496,7 @@ fun renderSiteQuoteCard(
             if (includeNumber) "Quote #${quote.number}" else null
         else -> buildString {
             if (includeNumber) append(siteNumberLabel(siteStyle, quote.number))
-            val rl = siteRatingLabel(siteStyle, quote.rating)
+            val rl = siteRatingLabel(siteStyle, quote.rating, ratingFormat)
             if (includeRating && rl != null) {
                 if (isNotEmpty()) append("  ")
                 append(rl)
@@ -4669,7 +4685,13 @@ suspend fun renderSiteQuoteCardForShare(
      * the novelty renderer so dual-palette cards (Friends sunset vs wall)
      * match the on-screen card.
      */
-    structureThemeId: String? = null
+    structureThemeId: String? = null,
+    /**
+     * v1.89.6: the rating format carried by the quote's database, when
+     * it declares one; forwarded to the canvas renderer so the exported
+     * rating text matches the on-screen card.
+     */
+    ratingFormat: String? = null
 ): Bitmap = withContext(Dispatchers.IO) {
     // v1.88.24: novelty themes render the real on-screen composables
     // off-screen to a bitmap — single source of truth, so the export is
@@ -4705,7 +4727,8 @@ suspend fun renderSiteQuoteCardForShare(
         colorizeNicks = colorizeNicks,
         nickPalette = nickPalette,
         watermark = watermark,
-        hideTldInHeader = hideTldInHeader
+        hideTldInHeader = hideTldInHeader,
+        ratingFormat = ratingFormat
     )
 }
 
@@ -4743,7 +4766,13 @@ suspend fun renderAndShareSiteQuoteCard(
      * v1.88.24: ambient composition locals for the novelty-theme export
      * path. Null falls back to defaults.
      */
-    noveltyLocals: NoveltyExportLocals? = null
+    noveltyLocals: NoveltyExportLocals? = null,
+    /**
+     * v1.89.6: the rating format carried by the quote's database, when
+     * it declares one; forwarded so the shared card's rating text
+     * matches the on-screen card.
+     */
+    ratingFormat: String? = null
 ) {
     try {
         val rendered = renderSiteQuoteCardForShare(
@@ -4760,7 +4789,8 @@ suspend fun renderAndShareSiteQuoteCard(
             colorizeNicks = colorizeNicks,
             nickPalette = nickPalette,
             hideTldInHeader = hideTldInHeader,
-            noveltyLocals = noveltyLocals
+            noveltyLocals = noveltyLocals,
+            ratingFormat = ratingFormat
         )
         shareBitmap(
             context, rendered,

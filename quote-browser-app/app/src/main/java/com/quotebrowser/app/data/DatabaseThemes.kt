@@ -164,6 +164,29 @@ object DbThemeRegistry {
 /** Theme id of the theme carried inside [dbId]'s database file. */
 fun dbBuiltInThemeId(dbId: String): String = "dbtheme:$dbId"
 
+/** Pseudo structure id for the Classic QDB presentation (see resolveDbTheme). */
+const val CLASSIC_STRUCTURE_ID = "classic_qdb"
+
+/**
+ * v1.89.6: card structure names a database-carried theme may declare —
+ * the structure theme ids [siteStyleFor] maps to a real site
+ * presentation. A carried card name outside this set ("standard",
+ * typos, future names) means the standard card.
+ */
+val DB_CARD_STRUCTURE_IDS: Set<String> = setOf(
+    "bashorg", "db_qdb_us", "db_qdb_mit", "db_quoteirc",
+    "db_burntelectrons", "db_warpdrive", "db_bashim", "db_wqdb",
+    "db_xkcdb", "db_furcqdb", "db_irox", "db_crapshack",
+    "db_friends_wall", "db_friends", CLASSIC_STRUCTURE_ID
+)
+
+/**
+ * v1.89.6: the structure theme id for a carried card name, or null when
+ * the name doesn't name a known structure (the standard card).
+ */
+fun dbCardStructureId(card: String?): String? =
+    card?.trim()?.takeIf { it in DB_CARD_STRUCTURE_IDS }
+
 /** Theme id of the user's [index]-th own theme for [dbId]. */
 fun dbUserThemeId(dbId: String, index: Int): String = "dbuser:$dbId:$index"
 
@@ -222,7 +245,18 @@ data class DbThemeSnapshots(
      */
     val builtInDbThemes: Map<String, ThemePreset> = emptyMap(),
     /** v1.89.5: card structure names from those databases, dbId -> card. */
-    val builtInDbCards: Map<String, String> = emptyMap()
+    val builtInDbCards: Map<String, String> = emptyMap(),
+    /**
+     * v1.89.6: rating header templates carried inside database files,
+     * dbId -> format (a "{rating}" template; "" = no header label).
+     * Only databases whose theme spec declares one appear here.
+     */
+    val builtInDbRatingFormats: Map<String, String> = emptyMap(),
+    /**
+     * v1.89.6: vote styles carried inside database files, dbId ->
+     * "plusminus" / "none". Only databases with a carried theme appear.
+     */
+    val builtInDbVoteStyles: Map<String, String> = emptyMap()
 ) {
     companion object {
         /** Feature off / unknown state: everything resolves bypassed. */
@@ -271,14 +305,24 @@ fun resolveDbTheme(snap: DbThemeSnapshots, dbId: String?): ResolvedDbTheme {
             // in its spec; "standard" (and anything unrecognized) means
             // the standard card — no special site structure — painted
             // with the carried palette.
-            chosen.startsWith("dbtheme:") -> null
+            // v1.89.6: a card name matching a known structure id resolves
+            // to that structure, exactly like the hardcoded mapping, so
+            // a database's site presentation no longer depends on the
+            // app version shipping its theme.
+            chosen.startsWith("dbtheme:") ->
+                dbCardStructureId(snap.builtInDbCards[dbId])
             else -> chosen
         }
     }
     // Centered header logo only for the DB's own site theme in Site layout
-    // (the same gate as site art).
+    // (the same gate as site art). v1.89.6: a carried theme whose card
+    // names a known structure counts as the DB's site theme here too —
+    // otherwise enabling the centered logo on an original database would
+    // silently stop working once its theme moved into the file.
     val centeredLogo = cfg.centeredHeaderLogo &&
-        layout == SiteLayout.SITE && chosen in DB_THEME_IDS
+        layout == SiteLayout.SITE && (chosen in DB_THEME_IDS ||
+            (chosen.startsWith("dbtheme:") &&
+                dbCardStructureId(snap.builtInDbCards[dbId]) != null))
     return ResolvedDbTheme(
         false, palette, structure, layout, cfg.siteColors, centeredLogo,
         hideTldInHeader = cfg.hideTldInHeader
@@ -289,8 +333,9 @@ fun resolveDbTheme(snap: DbThemeSnapshots, dbId: String?): ResolvedDbTheme {
  * Pseudo structure id for the Classic QDB presentation: bold #number +
  * score top bar, monospace typewriter body, bottom info bar. This IS the
  * qdb.us "Site" look, so Site and Classic QDB coincide for that theme.
+ * (The const itself is declared near the top of this file, before
+ * DB_CARD_STRUCTURE_IDS, which references it.)
  */
-const val CLASSIC_STRUCTURE_ID = "classic_qdb"
 
 /**
  * Maps a structure theme id to its site-presentation style. Database site

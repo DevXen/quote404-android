@@ -44,17 +44,34 @@ A database can carry its own default theme — the source site's look — as a
 {"name": "FML", "dark": false, "background": "#EEF2F7", "surface": "#FFFFFF",
  "primary": "#2F6DB3", "onBackground": "#1F2937", "onSurface": "#1F2937",
  "number": "#E07B39", "divider": "#C9D6E4", "quoteBackground": "#FFFFFF",
- "card": "standard"}
+ "card": "standard", "ratingFormat": "I agree ({rating})", "voteStyle": "none"}
 ```
 
-Colors are `#RRGGBB`; `card` names a built-in card structure (`standard`
-today). Since v1.89.5 the app reads this on install/update and uses it as
-the database's default theme, unless the user has picked a different theme
-for that database. Users can also add their own themes to a database
-in-app, and load ("Add to my themes") any database theme — built-in or
-their own — into their main theme list, where it survives removing the
-database. Parsing is lenient: missing or invalid keys fall back to the
-current global theme's values, so a partial spec is safe.
+Fields:
+
+- Colors are `#RRGGBB`: `background`, `surface`, `primary`, `onBackground`,
+  `onSurface`, `number`, `divider`, `quoteBackground`, plus optional
+  `rating` (rating badge background) and `ratingText`.
+- `card` names a built-in card structure the app renders: `standard` (the
+  generic quote card), or one of the existing site structures (`bashorg`,
+  `db_bashim`, `db_qdb_us`, …). A database can reuse a structure; it cannot
+  define a new one — layouts are app code.
+- `ratingFormat` is how the score displays, with `{rating}` as the number:
+  `"({rating})"`, `"{rating} pts"`, `"Score: {rating}"`, `"I agree ({rating})"`.
+  An empty string hides the rating from the card header.
+- `voteStyle`: `"plusminus"` draws the site's − / + vote links around the
+  rating (like Bash.org's `#123 - (456) +`); `"none"` shows the rating only.
+
+Since v1.89.5 the app reads this on install/update and uses it as the
+database's default theme, unless the user has picked a different theme for
+that database (v1.89.6 added the rating/vote fields and named structures).
+Users can also add their own themes to a database in-app, and load ("Add
+to my themes") any database theme — built-in or their own — into their
+main theme list, where it survives removing the database. Parsing is
+lenient: missing or invalid keys fall back to the current global theme's
+values, so a partial spec is safe. All 15 catalog databases carry their
+full site presentation (colors, structure, rating format, vote style) in
+their files.
 
 ## Manifest entry
 

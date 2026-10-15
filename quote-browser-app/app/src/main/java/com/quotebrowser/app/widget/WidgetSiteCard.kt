@@ -66,7 +66,10 @@ suspend fun DatabaseManager.widgetThemeSnapshots(): DbThemeSnapshots =
         classicLayoutEnabled = classicLayoutOption.first(),
         // v1.89.5: themes carried inside database files.
         builtInDbThemes = dbBuiltInThemes.first(),
-        builtInDbCards = dbBuiltInCards.first()
+        builtInDbCards = dbBuiltInCards.first(),
+        // v1.89.6: rating formats / vote styles carried alongside.
+        builtInDbRatingFormats = dbBuiltInRatingFormats.first(),
+        builtInDbVoteStyles = dbBuiltInVoteStyles.first()
     )
 
 /** The site-card colors for one database's widget card, or null for plain styling. */

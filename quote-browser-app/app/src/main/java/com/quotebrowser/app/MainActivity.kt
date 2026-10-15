@@ -221,6 +221,11 @@ class MainActivity : ComponentActivity() {
             // v1.89.5: themes carried inside database files.
             val dbBuiltInThemes by manager.dbBuiltInThemes.collectAsState(initial = emptyMap())
             val dbBuiltInCards by manager.dbBuiltInCards.collectAsState(initial = emptyMap())
+            // v1.89.6: rating formats / vote styles carried alongside.
+            val dbBuiltInRatingFormats by manager.dbBuiltInRatingFormats
+                .collectAsState(initial = emptyMap())
+            val dbBuiltInVoteStyles by manager.dbBuiltInVoteStyles
+                .collectAsState(initial = emptyMap())
             val transformModeName by manager.transformMode.collectAsState(initial = TransformMode.OFF.name)
             val voteControlsOn by manager.plusMinusRatingsEnabled.collectAsState(initial = true)
             val queuedTagsOn by manager.queuedTagsEnabled.collectAsState(initial = true)
@@ -235,7 +240,8 @@ class MainActivity : ComponentActivity() {
             val dbThemeSnap = remember(
                 themeId, perDbThemesOn, masterOverride, dbThemeConfigs,
                 customThemes, builtInOverrides, classicLayoutOn,
-                dbBuiltInThemes, dbBuiltInCards
+                dbBuiltInThemes, dbBuiltInCards,
+                dbBuiltInRatingFormats, dbBuiltInVoteStyles
             ) {
                 DbThemeSnapshots(
                     globalThemeId = themeId,
@@ -246,7 +252,9 @@ class MainActivity : ComponentActivity() {
                     builtInOverrides = builtInOverrides,
                     classicLayoutEnabled = classicLayoutOn,
                     builtInDbThemes = dbBuiltInThemes,
-                    builtInDbCards = dbBuiltInCards
+                    builtInDbCards = dbBuiltInCards,
+                    builtInDbRatingFormats = dbBuiltInRatingFormats,
+                    builtInDbVoteStyles = dbBuiltInVoteStyles
                 )
             }
             val resolvedRoot = remember(dbThemeSnap, currentDbId) {

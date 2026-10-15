@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.6", listOf(
+            "Databases now carry their full site presentation inside the file — colors, card style, rating format, and vote style — not just their colors. All 15 catalog databases are being updated with theirs; they arrive as a normal database update, and a database's site look no longer depends on the app version",
+            "Ratings read the way the site wrote them: FML quotes show their \"I agree\" count, and each database's own vote style (like Bash.org's +/− links) comes from its file too"
+        )
+    ),
+    ChangelogEntry(
         "1.89.5", listOf(
             "Databases can now carry their own site theme, built right into the database file — FML and FML Spicy do. If you installed them before, update them in Settings → Databases to pick up their themes",
             "Make a database your own: in Settings → Database themes, each database gets an \"Add your own theme for this database\" — your themes live with that database and can be picked as its theme",

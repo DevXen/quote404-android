@@ -298,6 +298,57 @@ fun RatingBadge(rating: Int?, modifier: Modifier = Modifier) {
 }
 
 /**
+ * v1.89.6: the rating display for a database that carries its own rating
+ * format in its theme spec (standard card + generic detail header): the
+ * formatted text ("I agree (123)") in the rating badge's pill instead of
+ * the bare number. An empty format renders nothing — the database
+ * declares no header rating label. When the database's vote style is
+ * "plusminus" and a rate handler exists, "−" / "+" text vote links
+ * flank the pill, wired to the same offline personal-rating handler
+ * the site cards use; with no handler the text renders without the
+ * glyphs rather than as dead buttons.
+ */
+@Composable
+fun RowScope.CarriedRatingDisplay(
+    format: String,
+    rating: Int?,
+    plusMinus: Boolean,
+    myRating: Int,
+    onRate: ((Int) -> Unit)?
+) {
+    if (format.isEmpty()) return
+    val linkColor = MaterialTheme.colorScheme.primary
+    if (plusMinus && onRate != null) {
+        textVoteLink("−", -1, linkColor, myRating, onRate)
+    }
+    val container: Color
+    val content: Color
+    if (rating == null) {
+        container = MaterialTheme.colorScheme.surfaceContainerHighest
+        content = MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        container = MaterialTheme.colorScheme.tertiaryContainer
+        content = MaterialTheme.colorScheme.onTertiaryContainer
+    }
+    Surface(
+        color = container,
+        contentColor = content,
+        shape = CircleShape
+    ) {
+        Text(
+            text = format.replace("{rating}", (rating ?: 0).toString()),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
+    }
+    if (plusMinus && onRate != null) {
+        textVoteLink("+", 1, linkColor, myRating, onRate)
+    }
+}
+
+/**
  * Small tonal pill naming the database a quote came from
  * ("Bash.org", "My Quotes", ...).
  */
@@ -1454,6 +1505,11 @@ fun SiteThemeQuoteCard(
     // theme (pure, no I/O).
     val snap = LocalDbThemeSnapshots.current
     val resolved = remember(snap, dbId) { resolveDbTheme(snap, dbId) }
+    // v1.89.6: the rating format the quote's database carries in its
+    // theme spec, when it declares one (null = built-in per-style text).
+    val carriedRatingFormat = remember(snap, dbId, sourceDbId) {
+        (dbId ?: sourceDbId)?.let { snap.builtInDbRatingFormats[it] }
+    }
     // v1.56: the per-database "Quote background" theme slot — the surface
     // behind the quote body text. Site themes use their authentic body
     // colors as the built-in default; an explicit per-database editor value
@@ -1583,7 +1639,9 @@ fun SiteThemeQuoteCard(
                 bashMyRating = myRating,
                 bashOnRate = rawOnRate,
                 // v1.55: the per-database "Quote background" theme slot.
-                quoteBackground = quoteBackground
+                quoteBackground = quoteBackground,
+                // v1.89.6: the database-carried rating format, if any.
+                ratingFormat = carriedRatingFormat
             )
         }
     }
@@ -1741,6 +1799,20 @@ fun QuoteRow(
         if (resolved.bypassed) SiteStyle.MODERN_CARD
         else siteStyleFor(resolved.structureThemeId)
     }
+    // v1.89.6: the rating format / vote style the quote's database
+    // carries in its theme spec (null format = no carried format). The
+    // standard card shows the formatted text instead of the bare badge
+    // number, flanked by the database's own +/− vote links when its
+    // vote style asks for them (then the generic header thumbs would
+    // duplicate them, so they stand down).
+    val carriedFormat = remember(snap, cardDbId) {
+        cardDbId?.let { snap.builtInDbRatingFormats[it] }
+    }
+    val carriedPlusMinus = remember(snap, cardDbId) {
+        cardDbId?.let { snap.builtInDbVoteStyles[it] } == "plusminus"
+    }
+    val carriedFlankActive = showRating && !carriedFormat.isNullOrEmpty() &&
+        carriedPlusMinus && gatedRate != null
     // Site header art renders only inside that site theme's own Site-layout
     // presentation (per-DB themes on, no master override, DB theming on,
     // Site layout); everywhere else headers stay plain.
@@ -1810,7 +1882,11 @@ fun QuoteRow(
     @Composable
     fun actionButtons() {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            VoteThumbButtons(myRating = myRating, onRate = gatedRate)
+            // v1.89.6: the database's own +/− links flank its carried
+            // rating format — the generic thumbs stand down then.
+            if (!carriedFlankActive) {
+                VoteThumbButtons(myRating = myRating, onRate = gatedRate)
+            }
             // v1.77: Favorites pin in the card header (modern cards have
             // no flag icon, so the pin leads the action group).
             if (onTogglePin != null) {
@@ -1945,7 +2021,20 @@ fun QuoteRow(
                         Spacer(Modifier.width(8.dp))
                     }
                     if (showRating) {
-                        RatingBadge(quote.rating)
+                        // v1.89.6: a database carrying its own rating
+                        // format shows that text instead of the bare
+                        // badge number (FML: "I agree (123)").
+                        if (carriedFormat != null) {
+                            CarriedRatingDisplay(
+                                format = carriedFormat,
+                                rating = quote.rating,
+                                plusMinus = carriedPlusMinus,
+                                myRating = myRating,
+                                onRate = gatedRate
+                            )
+                        } else {
+                            RatingBadge(quote.rating)
+                        }
                     }
                     if (showQueuedTag) {
                         Spacer(Modifier.width(8.dp))
@@ -2304,6 +2393,14 @@ fun QuoteDetailCard(
     val detailResolved = remember(themeSnap, sourceDbId) {
         resolveDbTheme(themeSnap, sourceDbId)
     }
+    // v1.89.6: the rating format / vote style the quote's database
+    // carries in its theme spec, for the generic detail header.
+    val detailCarriedFormat = remember(themeSnap, sourceDbId) {
+        sourceDbId?.let { themeSnap.builtInDbRatingFormats[it] }
+    }
+    val detailCarriedPlusMinus = remember(themeSnap, sourceDbId) {
+        sourceDbId?.let { themeSnap.builtInDbVoteStyles[it] } == "plusminus"
+    }
     val useSiteCard = !detailResolved.bypassed &&
         siteStyleFor(detailResolved.structureThemeId) != SiteStyle.MODERN_CARD
     val detailFlaggingOn = LocalFlagEnabled.current && onFlagQuote != null
@@ -2517,10 +2614,26 @@ fun QuoteDetailCard(
                 number = quote.number,
                 style = MaterialTheme.typography.titleMedium
             )
-            RatingBadge(quote.rating?.let { it + myRating })
+            // v1.89.6: a database carrying its own rating format shows
+            // that text instead of the bare badge number; its +/− vote
+            // links (vote style "plusminus") then replace the generic
+            // thumbs below.
+            if (detailCarriedFormat != null) {
+                CarriedRatingDisplay(
+                    format = detailCarriedFormat,
+                    rating = quote.rating?.let { it + myRating },
+                    plusMinus = detailCarriedPlusMinus,
+                    myRating = myRating,
+                    onRate = if (LocalVoteControlsEnabled.current) onRate else null
+                )
+            } else {
+                RatingBadge(quote.rating?.let { it + myRating })
+            }
             // v1.51: the "+/- vote controls" feature toggle gates the
             // offline thumbs (PersonalRatings only, no network).
-            if (LocalVoteControlsEnabled.current) {
+            if (LocalVoteControlsEnabled.current &&
+                (detailCarriedFormat.isNullOrEmpty() || !detailCarriedPlusMinus)
+            ) {
                 val activeTint = MaterialTheme.colorScheme.primary
                 val idleTint = MaterialTheme.colorScheme.onSurfaceVariant
                 IconButton(
@@ -3551,6 +3664,11 @@ fun ShareOptionsDialog(
     } else {
         SiteStyle.MODERN_CARD
     }
+    // v1.89.6: the rating format the quote's database carries in its
+    // theme spec, so the shared image's rating text matches the screen.
+    val shareRatingFormat = dbId?.let {
+        LocalDbThemeSnapshots.current.builtInDbRatingFormats[it]
+    }
     val siteCardAvailable = siteStyle != SiteStyle.MODERN_CARD
     // v1.61.5: the effective per-database "Quote background" behind the
     // quote body — the user's pick when set, the site theme's authentic
@@ -3698,7 +3816,8 @@ fun ShareOptionsDialog(
                             quoteBackgroundArgb = shareQuoteBackgroundArgb,
                             colorizeNicks = colorizeNicks,
                             nickPalette = shareNickPalette,
-                            noveltyLocals = shareNoveltyLocals
+                            noveltyLocals = shareNoveltyLocals,
+                            ratingFormat = shareRatingFormat
                         )
                     }
                 } else {

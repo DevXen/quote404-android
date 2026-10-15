@@ -16,8 +16,10 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.quotebrowser.app.data.plugins.PluginManager
 import com.quotebrowser.app.ui.TransformMode
+import androidx.compose.ui.graphics.Color
 import com.quotebrowser.app.ui.theme.CustomTheme
 import com.quotebrowser.app.ui.theme.DevXenBgMode
+import com.quotebrowser.app.ui.theme.contentOn
 import com.quotebrowser.app.ui.theme.ThemePreset
 import com.quotebrowser.app.ui.theme.ThemePresets
 import com.quotebrowser.app.ui.theme.customThemeId
@@ -3909,8 +3911,20 @@ class DatabaseManager private constructor(private val appContext: Context) {
     // effectivePreset consults.
     // ------------------------------------------------------------------
 
-    /** A theme parsed out of a database file, plus its card structure name. */
-    private data class DbCarriedTheme(val preset: ThemePreset, val card: String)
+    /**
+     * A theme parsed out of a database file, plus its card structure
+     * name. v1.89.6: also the database's rating presentation —
+     * [ratingFormat] is the header rating template with a "{rating}"
+     * token ("" = no header rating label; null = the database carries
+     * no format, so the built-in per-style table applies) and
+     * [voteStyle] is "plusminus" or "none".
+     */
+    private data class DbCarriedTheme(
+        val preset: ThemePreset,
+        val card: String,
+        val ratingFormat: String? = null,
+        val voteStyle: String = "none"
+    )
 
     /** Scan cache entry: the file stamp the parse was taken from. */
     private data class DbThemeScanEntry(
@@ -3931,6 +3945,28 @@ class DatabaseManager private constructor(private val appContext: Context) {
 
     /** Card structure names from database-carried themes, keyed by db id. */
     val dbBuiltInCards: StateFlow<Map<String, String>> = _dbBuiltInCards.asStateFlow()
+
+    private val _dbBuiltInRatingFormats =
+        MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /**
+     * v1.89.6: rating header templates carried inside database files,
+     * keyed by db id. Only databases whose theme spec declares a
+     * "ratingFormat" appear here ("" is a real entry: no header label).
+     */
+    val dbBuiltInRatingFormats: StateFlow<Map<String, String>> =
+        _dbBuiltInRatingFormats.asStateFlow()
+
+    private val _dbBuiltInVoteStyles =
+        MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /**
+     * v1.89.6: vote styles carried inside database files ("plusminus" /
+     * "none"), keyed by db id. Only databases with a carried theme
+     * appear here.
+     */
+    val dbBuiltInVoteStyles: StateFlow<Map<String, String>> =
+        _dbBuiltInVoteStyles.asStateFlow()
 
     private val _dbUserThemes = MutableStateFlow(loadDbUserThemes())
 
@@ -4051,7 +4087,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 val b = (background and 0xFF) / 255f
                 (r * 0.299f + g * 0.587f + b * 0.114f) < 0.5f
             }
-            val preset = ThemePreset(
+            var preset = ThemePreset(
                 id = dbBuiltInThemeId(dbId),
                 name = json.optString("name", "").trim().ifBlank { shortLabel(dbId) },
                 dark = dark,
@@ -4064,8 +4100,38 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 divider = col("divider", base.divider),
                 quoteBackground = col("quoteBackground", base.quoteBackground)
             )
+            // v1.89.6: the optional rating-badge colors ride along when
+            // the spec declares them; a lone "rating" derives its text
+            // color by the same auto-contrast rule ThemePreset's own
+            // default uses.
+            val ratingCol = parseDbThemeColor(json.optString("rating", ""))
+            val ratingTextCol = parseDbThemeColor(json.optString("ratingText", ""))
+            if (ratingCol != null || ratingTextCol != null) {
+                val newRating = ratingCol ?: preset.rating
+                preset = preset.copy(
+                    rating = newRating,
+                    ratingText = ratingTextCol
+                        ?: if (contentOn(Color(newRating)) == Color.White) {
+                            0xFFFFFFFFL
+                        } else {
+                            0xFF000000L
+                        }
+                )
+            }
             val card = json.optString("card", "").trim().ifBlank { "standard" }
-            DbCarriedTheme(preset, card)
+            // v1.89.6: rating presentation. A declared "ratingFormat"
+            // (even "") wins over the built-in per-style table; an
+            // undeclared one stays null so the table applies.
+            val ratingFormat = if (json.has("ratingFormat") &&
+                !json.isNull("ratingFormat")
+            ) {
+                json.optString("ratingFormat", "")
+            } else {
+                null
+            }
+            val voteStyle = json.optString("voteStyle", "none")
+                .trim().lowercase().takeIf { it == "plusminus" } ?: "none"
+            DbCarriedTheme(preset, card, ratingFormat, voteStyle)
         } catch (e: Exception) {
             null
         }
@@ -4090,6 +4156,8 @@ class DatabaseManager private constructor(private val appContext: Context) {
             synchronized(dbThemeScanLock) {
                 val presets = LinkedHashMap<String, ThemePreset>()
                 val cards = LinkedHashMap<String, String>()
+                val ratingFormats = LinkedHashMap<String, String>()
+                val voteStyles = LinkedHashMap<String, String>()
                 for (id in ids) {
                     val file = dbFileForExport(id) ?: continue
                     if (!file.exists()) continue
@@ -4113,11 +4181,15 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     if (carried != null) {
                         presets[id] = carried.preset
                         cards[id] = carried.card
+                        carried.ratingFormat?.let { ratingFormats[id] = it }
+                        voteStyles[id] = carried.voteStyle
                     }
                 }
                 dbThemeScanCache.keys.retainAll(ids.toSet())
                 _dbBuiltInThemes.value = presets
                 _dbBuiltInCards.value = cards
+                _dbBuiltInRatingFormats.value = ratingFormats
+                _dbBuiltInVoteStyles.value = voteStyles
                 rebuildDbThemeRegistry()
             }
         }
@@ -4130,6 +4202,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
             if (_dbBuiltInThemes.value.containsKey(dbId)) {
                 _dbBuiltInThemes.value = _dbBuiltInThemes.value - dbId
                 _dbBuiltInCards.value = _dbBuiltInCards.value - dbId
+                _dbBuiltInRatingFormats.value =
+                    _dbBuiltInRatingFormats.value - dbId
+                _dbBuiltInVoteStyles.value = _dbBuiltInVoteStyles.value - dbId
                 rebuildDbThemeRegistry()
             }
         }

@@ -361,6 +361,26 @@ fun siteRatingLabel(style: SiteStyle, rating: Int?): String? {
 }
 
 /**
+ * v1.89.6: the header rating text when the quote's database carries a
+ * rating format in its theme spec. A non-null [ratingFormat] wins over
+ * the per-style table: "" hides the header label entirely (the classic
+ * qdb.us semantics — its score lives on the quote line), otherwise the
+ * "{rating}" token is substituted with the score. A null format falls
+ * back to the built-in table ([siteRatingLabel] above).
+ */
+fun siteRatingLabel(
+    style: SiteStyle,
+    rating: Int?,
+    ratingFormat: String?
+): String? {
+    if (ratingFormat != null) {
+        if (ratingFormat.isEmpty()) return null
+        return ratingFormat.replace("{rating}", (rating ?: 0).toString())
+    }
+    return siteRatingLabel(style, rating)
+}
+
+/**
  * v1.61.11: the full site title for the header bar (TLD on, the default).
  * These match what the headers showed before the hide-TLD option existed.
  */
@@ -583,7 +603,12 @@ private fun SiteHeaderControls(
     headerActions: @Composable RowScope.() -> Unit = {},
     /** v1.77: Favorites pin toggle; null hides the pin. */
     isPinned: Boolean = false,
-    onTogglePin: (() -> Unit)? = null
+    onTogglePin: (() -> Unit)? = null,
+    /**
+     * v1.89.6: the rating format carried by the quote's database, when
+     * it declares one; null keeps the built-in per-style format.
+     */
+    ratingFormat: String? = null
 ) {
     Row(
         modifier = Modifier
@@ -595,7 +620,7 @@ private fun SiteHeaderControls(
         // Far left: rating + vote controls — except qdb.us and bash.org,
         // which keep their specific spots.
         if (style != SiteStyle.CLASSIC_QDB && style != SiteStyle.BASH) {
-            val ratingLabel = siteRatingLabel(style, quote.rating)
+            val ratingLabel = siteRatingLabel(style, quote.rating, ratingFormat)
             if (showRating && ratingLabel != null) {
                 Text(
                     text = ratingLabel,
@@ -1754,7 +1779,12 @@ fun SiteQuoteCard(
      * it gets the ungated rate handler + local rating directly.
      */
     bashMyRating: Int = 0,
-    bashOnRate: ((Int) -> Unit)? = null
+    bashOnRate: ((Int) -> Unit)? = null,
+    /**
+     * v1.89.6: the rating format carried by the quote's database, when it
+     * declares one; null keeps the built-in per-style formats.
+     */
+    ratingFormat: String? = null
 ) {
     // Black page background outside the bordered quotes is a main-theme
     // option (default ON) — an explicit user setting, so it applies in
@@ -1829,7 +1859,8 @@ fun SiteQuoteCard(
                             voteControls = voteControls,
                             headerActions = headerActions,
                             isPinned = isPinned,
-                            onTogglePin = onTogglePin
+                            onTogglePin = onTogglePin,
+                            ratingFormat = ratingFormat
                         )
                         // qdb.us quote line: #N +(score)- with the +/- controls.
                         QdbQuoteLine(
@@ -1913,7 +1944,8 @@ fun SiteQuoteCard(
                             voteControls = voteControls,
                             headerActions = headerActions,
                             isPinned = isPinned,
-                            onTogglePin = onTogglePin
+                            onTogglePin = onTogglePin,
+                            ratingFormat = ratingFormat
                         )
                         // v1.61.10: bordered quote body, like the other
                         // site themes (Bash.org is the only borderless one).

@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.buildAnnotatedString
 import com.quotebrowser.app.ui.theme.defaultBracketTint
 
@@ -316,6 +317,83 @@ private val NoticeLineRegex = Regex(
     "(?m)^(?:-{3,}[ \\t].*(?:join|part|quit|left[ \\t]|topic).*|(?:join|signoff)[ \\t]*\\|.*)$",
     RegexOption.IGNORE_CASE
 )
+
+/**
+ * v1.89.7: URLs inside quote text (http://…, https://…, bare www.…).
+ * The character class stops at whitespace and the angle/quote brackets
+ * that delimit text in quotes, so a URL never swallows a following
+ * <nick> or a quoted tail. Trailing sentence punctuation is trimmed by
+ * [quoteUrlEnd] after the match.
+ */
+private val QuoteUrlRegex =
+    Regex("(?i)(?:https?://|www\\.)[^\\s<>\"'\\u201C\\u201D\\u2018\\u2019]+")
+
+/** Base link color for quote-text URLs; contrast-adjusted per card. */
+private val QuoteLinkBlue = Color(0xFF2F7DE1)
+
+/**
+ * v1.89.7: the end offset (exclusive) of a raw URL match after trimming
+ * trailing punctuation that isn't part of the URL: sentence stops
+ * (.,;:!?) and closing brackets that have no matching opener inside the
+ * match ("(see http://x)" keeps the balanced pair, "http://x)" loses
+ * the stray paren).
+ */
+private fun quoteUrlEnd(raw: String): Int {
+    var end = raw.length
+    while (end > 0) {
+        val ch = raw[end - 1]
+        val drop = when (ch) {
+            '.', ',', ';', ':', '!', '?' -> true
+            ')' -> raw.substring(0, end).count { it == '(' } <
+                raw.substring(0, end).count { it == ')' }
+            ']' -> raw.substring(0, end).count { it == '[' } <
+                raw.substring(0, end).count { it == ']' }
+            '}' -> raw.substring(0, end).count { it == '{' } <
+                raw.substring(0, end).count { it == '}' }
+            else -> false
+        }
+        if (!drop) break
+        end--
+    }
+    return end
+}
+
+/**
+ * v1.89.7: paints URLs in [text] as links — link color + underline plus
+ * a "url" string annotation holding the address to open (bare www.
+ * links get https:// prepended for opening only; the displayed text is
+ * unchanged). Runs on the final composed display text, independent of
+ * the nick-color toggles: a link is a link even with coloring off.
+ * Tap consumers hit-test the "url" annotation exactly like "nick".
+ */
+private fun AnnotatedString.Builder.addQuoteUrlLinks(
+    text: String,
+    linkColor: Color
+) {
+    for (m in QuoteUrlRegex.findAll(text)) {
+        val raw = m.value
+        val end = quoteUrlEnd(raw)
+        if (end <= 0) continue
+        val linkText = raw.substring(0, end)
+        // A bare "www." with no further dot is not a plausible address.
+        if (linkText.startsWith("www.", ignoreCase = true) &&
+            '.' !in linkText.substring(4)
+        ) {
+            continue
+        }
+        val openUrl = if (linkText.startsWith("www.", ignoreCase = true)) {
+            "https://$linkText"
+        } else {
+            linkText
+        }
+        val start = m.range.first
+        addStyle(
+            SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline),
+            start, start + end
+        )
+        addStringAnnotation("url", openUrl, start, start + end)
+    }
+}
 
 /**
  * Leading nick of an action-line match (from [ActionLineRegex]), as a
@@ -761,7 +839,16 @@ fun rememberNickAnnotatedText(text: String, style: TextStyle): AnnotatedString {
     val annotated = remember(displayText, palette, clean) {
         buildAnnotatedString {
             append(displayText)
-            if (!palette.enabled) return@buildAnnotatedString
+            // v1.89.7: URLs are links even when nick coloring is off.
+            val linkColor = if (quoteBg != null) {
+                ensureContrastOn(QuoteLinkBlue, quoteBg)
+            } else {
+                QuoteLinkBlue
+            }
+            if (!palette.enabled) {
+                addQuoteUrlLinks(displayText, linkColor)
+                return@buildAnnotatedString
+            }
             val ruleMap = palette.rules.associateBy { it.nick.lowercase() }
             // v1.86: per-category color overrides. A chosen custom hex color
             // (contrast-adjusted against the quote background like the
@@ -1190,6 +1277,9 @@ fun rememberNickAnnotatedText(text: String, style: TextStyle): AnnotatedString {
                     }
                 }
             }
+            // v1.89.7: URLs last, so the link color and underline win
+            // over any nick/action span they overlap.
+            addQuoteUrlLinks(displayText, linkColor)
         }
     }
     // v1.51 display-only transforms (1337/upside-down/alternating case):

@@ -654,6 +654,12 @@ class DatabaseManager private constructor(private val appContext: Context) {
         /** v1.60: per-file revision stamps for applied download updates. */
         private const val KEY_DB_UPDATE_REV = "db_update_rev_"
 
+        // v1.89.7: catalog revision last merged into a same-named user
+        // database (alias sync), and the catalog revision a user database
+        // was checked against and declined (name match, different content).
+        private const val KEY_DB_ALIAS_REV = "db_alias_rev_"
+        private const val KEY_DB_ALIAS_DECLINED = "db_alias_declined_"
+
         /**
          * v1.89: the databases no longer ship inside the APK — they are
          * downloaded from the public GitHub "databases" release. This is
@@ -6079,6 +6085,140 @@ class DatabaseManager private constructor(private val appContext: Context) {
                 Log.w("QuoteBrowser", "auto-update failed for ${entry.file}", e)
             }
         }
+        // v1.89.7: personal databases that share a catalog database's
+        // name receive its content too (see syncAliasedUserDbs).
+        try {
+            syncAliasedUserDbs(entries)
+        } catch (e: Exception) {
+            Log.w("QuoteBrowser", "alias sync pass failed", e)
+        }
+    }
+
+    /**
+     * v1.89.7: same-name user database sync ("alias" sync). A personal
+     * database created in the pre-catalog era can carry the same display
+     * name as a catalog database (the original imported "Friends") —
+     * catalog updates only ever reach the catalog identity, so such a
+     * copy kept stale quote text forever while looking identical in the
+     * switcher. When a catalog database is NOT installed but exactly one
+     * user database carries its label, the catalog content is merged
+     * into the USER database's own file: its id, favorites, lists, and
+     * category tables are untouched, and each catalog revision is
+     * applied at most once — if the content differs again afterwards,
+     * the user edited their copy and it is left alone until the catalog
+     * moves. Identity guard: the merge only happens when the downloaded
+     * file holds the same number of quotes as the user file; a different
+     * database that merely shares a name is declined (once per catalog
+     * revision) and never touched.
+     */
+    private fun syncAliasedUserDbs(entries: List<CatalogEntry>) {
+        val users = _userDbs.value
+        if (users.isEmpty()) return
+        for (entry in entries) {
+            try {
+                if (isCatalogDbInstalled(entry.file)) continue
+                val label = entry.label.takeIf { it.isNotBlank() }
+                    ?: catalogLabelFor(entry.file)
+                val matches = users.filter {
+                    it.label.trim().equals(label.trim(), ignoreCase = true)
+                }
+                if (matches.size != 1) continue
+                val user = matches[0]
+                val userFile = File(appContext.filesDir, "databases/${user.id}.db")
+                if (!userFile.exists()) continue
+                // Already identical content: just record the stamp.
+                if (entry.contentSha256.isNotBlank()) {
+                    val local = quotesContentSha256(userFile)
+                    if (local != null &&
+                        local.equals(entry.contentSha256, ignoreCase = true)
+                    ) {
+                        if (prefs.getInt(KEY_DB_ALIAS_REV + user.id, 0) !=
+                            entry.revision
+                        ) {
+                            prefs.edit()
+                                .putInt(KEY_DB_ALIAS_REV + user.id, entry.revision)
+                                .apply()
+                        }
+                        continue
+                    }
+                }
+                // One application per catalog revision; a later content
+                // difference means the user edited their copy.
+                if (prefs.getInt(KEY_DB_ALIAS_REV + user.id, 0) >=
+                    entry.revision
+                ) {
+                    continue
+                }
+                if (prefs.getInt(KEY_DB_ALIAS_DECLINED + user.id, 0) >=
+                    entry.revision
+                ) {
+                    continue
+                }
+                val tmp = File.createTempFile(
+                    "db_alias_", ".db", appContext.cacheDir
+                )
+                try {
+                    downloadToFile(entry.downloadUrl, tmp, MAX_DB_DOWNLOAD_BYTES)
+                    if (entry.sha256.isNotBlank() &&
+                        sha256Of(tmp) != entry.sha256.lowercase()
+                    ) {
+                        Log.w(
+                            "QuoteBrowser",
+                            "alias sync: sha mismatch for ${entry.file}"
+                        )
+                        continue
+                    }
+                    val problem = validateQuoteDb(tmp)
+                    if (problem != null) {
+                        Log.w(
+                            "QuoteBrowser",
+                            "alias sync: invalid download for ${entry.file}: $problem"
+                        )
+                        continue
+                    }
+                    if (quoteCountOnFile(tmp) != quoteCountOnFile(userFile)) {
+                        Log.i(
+                            "QuoteBrowser",
+                            "alias sync: '${user.label}' (${user.id}) shares " +
+                                "a name with ${entry.file} but holds " +
+                                "different content; leaving it alone"
+                        )
+                        prefs.edit()
+                            .putInt(KEY_DB_ALIAS_DECLINED + user.id, entry.revision)
+                            .apply()
+                        continue
+                    }
+                    mergeDbFileIntoUserDb(user.id, tmp)
+                    prefs.edit()
+                        .putInt(KEY_DB_ALIAS_REV + user.id, entry.revision)
+                        .apply()
+                    Log.i(
+                        "QuoteBrowser",
+                        "alias sync: merged ${entry.file} rev " +
+                            "${entry.revision} into user database " +
+                            "'${user.label}' (${user.id})"
+                    )
+                } finally {
+                    tmp.delete()
+                }
+            } catch (e: Exception) {
+                Log.w("QuoteBrowser", "alias sync failed for ${entry.file}", e)
+            }
+        }
+    }
+
+    /**
+     * v1.89.7: merge a downloaded catalog file into a user database's own
+     * file — same merge core as the catalog path, user-file target, under
+     * that database's per-db JVM lock.
+     */
+    private fun mergeDbFileIntoUserDb(userId: String, srcFile: File) {
+        synchronized(bundledDbLock(userId)) {
+            mergeDbFileIntoDeviceLocked(
+                userId, srcFile,
+                File(appContext.filesDir, "databases/$userId.db")
+            )
+        }
     }
 
     /**
@@ -6636,12 +6776,18 @@ class DatabaseManager private constructor(private val appContext: Context) {
         // lock — the healer waits on this JVM monitor instead of losing
         // SQLite's 5s busy race against the merge's long write lock.
         synchronized(bundledDbLock(assetName)) {
-            mergeDbFileIntoDeviceLocked(assetName, srcFile)
+            mergeDbFileIntoDeviceLocked(
+                assetName, srcFile,
+                appContext.getDatabasePath("bundled_$assetName")
+            )
         }
     }
 
-    private fun mergeDbFileIntoDeviceLocked(assetName: String, srcFile: File) {
-        val deviceFile = appContext.getDatabasePath("bundled_$assetName")
+    private fun mergeDbFileIntoDeviceLocked(
+        assetName: String,
+        srcFile: File,
+        deviceFile: File
+    ) {
         if (!deviceFile.exists()) return
         var db: android.database.sqlite.SQLiteDatabase? = null
         try {

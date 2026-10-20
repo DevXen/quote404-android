@@ -135,6 +135,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -1736,7 +1737,10 @@ fun QuoteRow(
     var bodyLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
     var bodyAnnotated by remember { mutableStateOf<AnnotatedString?>(null) }
 
-    /** Row tap: nick taps go to the nick page, everything else is normal. */
+    val rowUriHandler = LocalUriHandler.current
+
+    /** Row tap: URL taps open the link, nick taps go to the nick page,
+     *  everything else is the card's normal tap action. */
     fun handleRowTap() {
         val tap = bodyTap
         val layout = bodyLayout
@@ -1747,6 +1751,18 @@ fun QuoteRow(
         ) {
             val offset = layout.getOffsetForPosition(tap.second)
             if (offset in annotated.indices) {
+                // v1.89.7: a URL tap opens the browser and never falls
+                // through to the card's tap action.
+                val url = annotated.getStringAnnotations(
+                    "url", offset, (offset + 1).coerceAtMost(annotated.length)
+                ).firstOrNull()?.item
+                if (url != null) {
+                    try {
+                        rowUriHandler.openUri(url)
+                    } catch (_: Exception) {
+                    }
+                    return
+                }
                 // 1-wide query: getStringAnnotations only matches a
                 // zero-width query strictly inside the range, so a tap on
                 // the nick's first letter would miss.
@@ -2466,15 +2482,29 @@ fun QuoteDetailCard(
             } else Modifier
             SelectionContainer {
                 Box(modifier = zoomModifier) {
+                    val detailUriHandler = LocalUriHandler.current
                     ClickableText(
                         text = annotatedQuote,
                         style = zoomedStyle.copy(color = bodyColor),
                         modifier = Modifier.padding(20.dp),
                         onClick = { offset ->
-                            annotatedQuote.getStringAnnotations(
-                                "nick", offset,
+                            // v1.89.7: URLs open in the browser; other
+                            // taps go to the nick handler as before.
+                            val url = annotatedQuote.getStringAnnotations(
+                                "url", offset,
                                 (offset + 1).coerceAtMost(annotatedQuote.length)
-                            ).firstOrNull()?.let { onNickClick(it.item) }
+                            ).firstOrNull()?.item
+                            if (url != null) {
+                                try {
+                                    detailUriHandler.openUri(url)
+                                } catch (_: Exception) {
+                                }
+                            } else {
+                                annotatedQuote.getStringAnnotations(
+                                    "nick", offset,
+                                    (offset + 1).coerceAtMost(annotatedQuote.length)
+                                ).firstOrNull()?.let { onNickClick(it.item) }
+                            }
                         }
                     )
                 }

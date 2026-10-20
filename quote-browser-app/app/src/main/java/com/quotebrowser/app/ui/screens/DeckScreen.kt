@@ -42,9 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -311,6 +316,14 @@ private fun DeckPage(
     val bodyStyle = scaledTextStyle(baseStyle)
     // Short quotes look best centered; IRC-style logs stay left-aligned.
     val textAlign = if (displayText.length <= 280) TextAlign.Center else TextAlign.Start
+    // v1.89.7: URL tap support — the card's tap detector works in card
+    // coordinates, so the body text's root position is captured and the
+    // tap is translated into text coordinates for the hit-test.
+    val bodyAnnotated = rememberNickAnnotatedText(displayText, bodyStyle)
+    val deckUriHandler = LocalUriHandler.current
+    var deckBodyLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var deckBodyPos by remember { mutableStateOf(Offset.Zero) }
+    var deckCardPos by remember { mutableStateOf(Offset.Zero) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Soft vertical wash so the page feels designed, not blank.
@@ -332,9 +345,40 @@ private fun DeckPage(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .heightIn(max = maxHeight * 0.84f)
-                .pointerInput(onClick, onToggleFavorite) {
+                .onGloballyPositioned { deckCardPos = it.positionInRoot() }
+                .pointerInput(onClick, onToggleFavorite, bodyAnnotated) {
                     detectTapGestures(
-                        onTap = { onClick() },
+                        onTap = { tapOffset ->
+                            // v1.89.7: a tap on a URL in the quote opens
+                            // it instead of opening the detail screen.
+                            var openedLink = false
+                            val layout = deckBodyLayout
+                            if (layout != null) {
+                                val local = tapOffset + deckCardPos - deckBodyPos
+                                if (local.x >= 0f && local.y >= 0f &&
+                                    local.x < layout.size.width &&
+                                    local.y < layout.size.height
+                                ) {
+                                    val offset = layout.getOffsetForPosition(local)
+                                    val url = if (offset in bodyAnnotated.indices) {
+                                        bodyAnnotated.getStringAnnotations(
+                                            "url", offset,
+                                            (offset + 1).coerceAtMost(bodyAnnotated.length)
+                                        ).firstOrNull()?.item
+                                    } else {
+                                        null
+                                    }
+                                    if (url != null) {
+                                        try {
+                                            deckUriHandler.openUri(url)
+                                        } catch (_: Exception) {
+                                        }
+                                        openedLink = true
+                                    }
+                                }
+                            }
+                            if (!openedLink) onClick()
+                        },
                         onDoubleTap = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             onToggleFavorite()
@@ -393,10 +437,13 @@ private fun DeckPage(
                     modifier = Modifier.padding(bottom = 0.dp)
                 )
                 Text(
-                    text = rememberNickAnnotatedText(displayText, bodyStyle),
+                    text = bodyAnnotated,
                     style = bodyStyle,
                     textAlign = textAlign,
-                    modifier = Modifier.fillMaxWidth()
+                    onTextLayout = { deckBodyLayout = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { deckBodyPos = it.positionInRoot() }
                 )
                 if (truncated) {
                     Text(

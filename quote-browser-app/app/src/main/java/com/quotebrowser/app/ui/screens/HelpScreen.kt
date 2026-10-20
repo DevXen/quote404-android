@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.7", listOf(
+            "Links in quotes are now tappable: a web address inside a quote's text opens in your browser, styled as a link on every card and the quote detail view",
+            "Fixed old imported databases never updating: a personal database that shares its name with a catalog database (like an imported \"Friends\" from before the catalog existed) now receives the catalog's corrected quotes automatically — your favorites, lists, and categories in it are untouched"
+        )
+    ),
+    ChangelogEntry(
         "1.89.6", listOf(
             "Databases now carry their full site presentation inside the file — colors, card style, rating format, and vote style — not just their colors. All 15 catalog databases are being updated with theirs; they arrive as a normal database update, and a database's site look no longer depends on the app version",
             "Ratings read the way the site wrote them: FML quotes show their \"I agree\" count, and each database's own vote style (like Bash.org's +/− links) comes from its file too"

@@ -68,6 +68,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -883,6 +884,7 @@ private fun QotdCard(
         var qotdBodyTap by remember { mutableStateOf<Pair<Int, Offset>?>(null) }
         var qotdBodyLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
         var qotdBodyAnnotated by remember { mutableStateOf<AnnotatedString?>(null) }
+        val qotdUriHandler = LocalUriHandler.current
         Box(
             Modifier
                 .pointerInput(Unit) {
@@ -901,6 +903,20 @@ private fun QotdCard(
                     ) {
                         val offset = layout.getOffsetForPosition(tap.second)
                         if (offset in annotated.indices) {
+                            // v1.89.7: a URL tap opens the browser.
+                            val url = annotated
+                                .getStringAnnotations(
+                                    "url", offset,
+                                    (offset + 1).coerceAtMost(annotated.length)
+                                )
+                                .firstOrNull()?.item
+                            if (url != null) {
+                                try {
+                                    qotdUriHandler.openUri(url)
+                                } catch (_: Exception) {
+                                }
+                                return@clickable
+                            }
                             val nick = annotated
                                 .getStringAnnotations(
                                     "nick", offset,

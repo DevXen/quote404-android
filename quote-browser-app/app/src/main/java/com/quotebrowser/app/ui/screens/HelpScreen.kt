@@ -45,6 +45,11 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.8", listOf(
+            "Fixed FML and FML Spicy not showing their site themes: databases installed before their themes were baked into the file never received them, because database updates only synced the quotes. Updates now carry the database's info section (theme, source, last-scraped date) too, and affected databases repair themselves on the next launch — no reinstall needed"
+        )
+    ),
+    ChangelogEntry(
         "1.89.7", listOf(
             "Links in quotes are now tappable: a web address inside a quote's text opens in your browser, styled as a link on every card and the quote detail view",
             "Fixed old imported databases never updating: a personal database that shares its name with a catalog database (like an imported \"Friends\" from before the catalog existed) now receives the catalog's corrected quotes automatically — your favorites, lists, and categories in it are untouched"

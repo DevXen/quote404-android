@@ -660,6 +660,10 @@ class DatabaseManager private constructor(private val appContext: Context) {
         private const val KEY_DB_ALIAS_REV = "db_alias_rev_"
         private const val KEY_DB_ALIAS_DECLINED = "db_alias_declined_"
 
+        // v1.89.8: catalog revision whose db_info was last merged into an
+        // installed database's on-device file.
+        private const val KEY_DB_INFO_REV = "db_info_rev_"
+
         /**
          * v1.89: the databases no longer ship inside the APK — they are
          * downloaded from the public GitHub "databases" release. This is
@@ -5675,6 +5679,14 @@ class DatabaseManager private constructor(private val appContext: Context) {
         prefs.edit().putInt(KEY_DB_UPDATE_REV + file, revision).apply()
     }
 
+    /** Catalog revision whose db_info was last merged into the device copy. */
+    fun dbInfoRevision(file: String): Int =
+        prefs.getInt(KEY_DB_INFO_REV + file, 0)
+
+    fun setDbInfoRevision(file: String, revision: Int) {
+        prefs.edit().putInt(KEY_DB_INFO_REV + file, revision).apply()
+    }
+
     /** Label for a catalog file: catalog entry first, then the built-in
      * overrides, then a prettified file name. */
     fun catalogLabelFor(file: String): String =
@@ -5779,6 +5791,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
             ensureImportedStatusColumn(deviceFile)
         }
         setInstalledDbRevision(entry.file, entry.revision)
+        // v1.89.8: the landed file's db_info is now the device copy's too
+        // (whole-file install, or the merge's db_info sync).
+        setDbInfoRevision(entry.file, entry.revision)
         bumpCatalogChanged()
     }
 
@@ -6079,7 +6094,13 @@ class DatabaseManager private constructor(private val appContext: Context) {
         for (entry in entries) {
             try {
                 if (!isCatalogDbInstalled(entry.file)) continue
-                if (entry.revision <= installedDbRevision(entry.file)) continue
+                val revBehind = entry.revision > installedDbRevision(entry.file)
+                // v1.89.8: a database can be current on quotes yet still
+                // miss its baked-in theme (installed before the theme was
+                // added to its file) — repair those too.
+                val infoBehind = entry.revision > dbInfoRevision(entry.file) &&
+                    dbInfoCatchUpNeeded(entry)
+                if (!revBehind && !infoBehind) continue
                 applyDbUpdate(entry)
             } catch (e: Exception) {
                 Log.w("QuoteBrowser", "auto-update failed for ${entry.file}", e)
@@ -6597,6 +6618,48 @@ class DatabaseManager private constructor(private val appContext: Context) {
     }
 
     /**
+     * v1.89.8: true when an installed catalog database's on-device file
+     * still lacks a carried theme (no db_info theme row) and the database
+     * has no hardcoded site theme to fall back on — the population that
+     * installed a database before its theme was baked into the file
+     * (FML/FML Spicy at revision 1). Databases with a hardcoded theme
+     * render the same either way, so they are never re-downloaded just
+     * to copy db_info.
+     */
+    private fun dbInfoCatchUpNeeded(entry: CatalogEntry): Boolean {
+        if (siteThemeFor(entry.id) != null) return false
+        val deviceFile = catalogDeviceFile(entry.file)
+        if (!deviceFile.exists()) return false
+        var db: android.database.sqlite.SQLiteDatabase? = null
+        return try {
+            db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                deviceFile.absolutePath, null,
+                android.database.sqlite.SQLiteDatabase.OPEN_READONLY
+            )
+            val hasTable = db.rawQuery(
+                "SELECT COUNT(*) FROM sqlite_master " +
+                    "WHERE type='table' AND name='db_info'",
+                null
+            ).use { c -> c.moveToFirst(); c.getLong(0) > 0 }
+            if (!hasTable) {
+                true
+            } else {
+                val theme = db.rawQuery(
+                    "SELECT value FROM db_info WHERE key='theme'", null
+                ).use { c -> if (c.moveToFirst()) c.getString(0) else null }
+                theme.isNullOrBlank()
+            }
+        } catch (e: Exception) {
+            false
+        } finally {
+            try {
+                db?.close()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
      * v1.89: downloads one catalog entry and lands it (merge when the
      * database is installed, fresh placement otherwise), stamping the
      * installed revision. Generalized from the v1.60 asset-based version
@@ -6613,7 +6676,9 @@ class DatabaseManager private constructor(private val appContext: Context) {
             )
         }
         val localRev = installedDbRevision(assetName)
-        if (remoteRev <= localRev) {
+        // v1.89.8: also proceed when only the db_info section is behind —
+        // the merge syncs it even when the quotes are unchanged.
+        if (remoteRev <= localRev && dbInfoRevision(assetName) >= remoteRev) {
             return DbUpdateOutcome(
                 assetName, label, DbUpdateOutcome.UpdateStatus.UP_TO_DATE,
                 "Already current (revision $localRev)."
@@ -6819,6 +6884,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     "db merge: cannot fingerprint $assetName", e
                 )
             }
+            var srcInfo: List<Pair<String, String>>? = null
             run {
                 var assetHasStatus = false
                 val assetContentCols = mutableSetOf<String>()
@@ -6844,12 +6910,57 @@ class DatabaseManager private constructor(private val appContext: Context) {
                     // 10 of 11 bundled assets don't have it.
                     assetFingerprint = quotesFingerprint(adb, "quotes")
                     assetCount = assetFingerprint.substringBefore(":").toLongOrNull() ?: 0L
+                    // v1.89.8: the source's db_info rows (site theme,
+                    // last-scraped date, source name) ride along with the
+                    // merge — before this, updates only ever synced the
+                    // quotes table, so a database installed before its
+                    // theme was baked in (FML at revision 1) never got it.
+                    val hasInfo = adb.rawQuery(
+                        "SELECT COUNT(*) FROM sqlite_master " +
+                            "WHERE type='table' AND name='db_info'",
+                        null
+                    ).use { c -> c.moveToFirst(); c.getLong(0) > 0 }
+                    if (hasInfo) {
+                        val info = mutableListOf<Pair<String, String>>()
+                        adb.rawQuery("SELECT key, value FROM db_info", null)
+                            .use { c ->
+                                while (c.moveToNext()) {
+                                    val k = c.getString(0) ?: continue
+                                    info += k to (c.getString(1) ?: "")
+                                }
+                            }
+                        srcInfo = info
+                    }
                 }
                 // v1.65: all three content columns travel together in the
                 // rated assets; require all three, not just maturity.
                 val assetHasContent = assetContentCols.containsAll(
                     setOf("maturity", "spicy", "speakers")
                 )
+                // v1.89.8: sync db_info into the device copy (creating the
+                // table for files from the pre-db_info era). Runs even
+                // when the quotes fingerprint matches — a theme-only
+                // revision changes no quotes but must still land.
+                if (srcInfo != null) {
+                    try {
+                        db.execSQL(
+                            "CREATE TABLE IF NOT EXISTS db_info " +
+                                "(key TEXT PRIMARY KEY, value TEXT)"
+                        )
+                        for ((k, v) in srcInfo!!) {
+                            db.execSQL(
+                                "INSERT OR REPLACE INTO db_info(key, value) " +
+                                    "VALUES (?, ?)",
+                                arrayOf<Any?>(k, v)
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.w(
+                            "QuoteBrowser",
+                            "db merge: db_info sync failed for $assetName", e
+                        )
+                    }
+                }
                 // v1.74.4: merge whenever the asset's data differs from the
                 // device copy — no longer requires the asset to carry a
                 // status column (10 of 11 bundled assets don't have one).

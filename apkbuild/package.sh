@@ -69,6 +69,7 @@ set -o pipefail
 "$JAVA" -cp "$BT/lib/d8.jar" com.android.tools.r8.D8 \
   --lib "$PLATFORM" \
   --min-api 26 \
+  \
   --output "$BUILD/dex" \
   $DEXIN2 > $BUILD/d8.log 2>&1
 D8RC=$?

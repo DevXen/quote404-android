@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -680,6 +681,18 @@ fun SettingsScreen(
     // While searching, everything is force-expanded so matches are visible.
     val forceExpand = settingsQueryWords.isNotEmpty()
 
+    // v1.89.9: drill-in navigation — the landing view is a short index of
+    // categories; tapping a category opens it as its own page (back row or
+    // the system back button returns to the index). Searching keeps the
+    // old behavior: one flat, force-expanded, filtered list.
+    var settingsPage by remember { mutableStateOf<String?>(null) }
+    val browsing = settingsQueryWords.isEmpty()
+    // In page mode the open category renders fully expanded.
+    val effForce = forceExpand || settingsPage != null
+    fun categoryShown(cat: SettingsCategory): Boolean =
+        if (browsing && settingsPage != null) settingsPage == cat.name
+        else categoryVisible(cat)
+
     /**
      * v1.59: item keys of the LazyColumn below, in emission order. Must stay
      * in sync with the LazyColumn content — it drives scroll-to-setting.
@@ -691,16 +704,22 @@ fun SettingsScreen(
         }
         if (uiState.recent.isNotEmpty()) add("row:recent")
         if (uiState.pinned.isNotEmpty()) add("row:pinned")
+        // v1.89.9: the index lists category rows only.
+        if (browsing && settingsPage == null) {
+            SETTINGS_CATEGORIES.forEach { cat -> add("cat:${cat.name}") }
+            return@buildList
+        }
+        if (browsing && settingsPage != null) add("row:pagenav")
         SETTINGS_CATEGORIES.forEach { cat ->
-            if (!categoryVisible(cat)) return@forEach
+            if (!categoryShown(cat)) return@forEach
             add("cat:${cat.name}")
             val catNameMatches = settingsQueryWords.isNotEmpty() &&
                 settingsQueryWords.all { cat.name.lowercase().contains(it) }
-            if (!(forceExpand || uiState.isExpanded("cat", cat.name))) return@forEach
+            if (!(effForce || uiState.isExpanded("cat", cat.name))) return@forEach
             cat.sections.forEach { s ->
                 if (!sectionVisible(s) && !catNameMatches) return@forEach
                 add("section:$s")
-                if (forceExpand || uiState.isExpanded("section", s)) {
+                if (effForce || uiState.isExpanded("section", s)) {
                     add("content:$s")
                 }
             }
@@ -714,6 +733,8 @@ fun SettingsScreen(
     fun jumpToSetting(entry: SettingsUiState.Entry) {
         // Clear the search so a filtered-out target can't stay hidden.
         settingsQuery = ""
+        // v1.89.9: land on the setting's category page.
+        settingsPage = entry.category
         scope.launch {
             uiState.setExpanded("cat", entry.category, true)
             uiState.setExpanded("section", entry.section, true)
@@ -728,6 +749,10 @@ fun SettingsScreen(
         }
     }
 
+    // v1.89.9: system back leaves a category page before leaving Settings.
+    BackHandler(enabled = browsing && settingsPage != null) {
+        settingsPage = null
+    }
     CompositionLocalProvider(LocalSettingsUiState provides uiState) {
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -783,18 +808,33 @@ fun SettingsScreen(
                     )
                 }
             }
+            // v1.89.9: back row on a category page.
+            if (browsing && settingsPage != null) {
+                item(key = "row:pagenav") {
+                    TextButton(onClick = { settingsPage = null }) {
+                        Text("‹  All settings")
+                    }
+                }
+            }
             // v1.59 settings category: Appearance.
             run {
                 val cat = SETTINGS_CATEGORIES.first { it.name == "Appearance" }
-                if (categoryVisible(cat)) {
+                if (categoryShown(cat)) {
                     val catNameMatches = settingsQueryWords.isNotEmpty() &&
                         settingsQueryWords.all { cat.name.lowercase().contains(it) }
-                    val catOpen = forceExpand || uiState.isExpanded("cat", cat.name)
+                    val catOpen = (effForce || uiState.isExpanded("cat", cat.name)) &&
+                        !(browsing && settingsPage == null)
                     item(key = "cat:${cat.name}") {
                         SettingsCategoryHeader(
                             name = cat.name,
                             expanded = catOpen,
-                            onToggle = { uiState.toggleExpanded("cat", cat.name) }
+                            onToggle = {
+                                if (browsing && settingsPage == null) {
+                                    settingsPage = cat.name
+                                } else {
+                                    uiState.toggleExpanded("cat", cat.name)
+                                }
+                            }
                         )
                     }
                     if (catOpen) {
@@ -804,7 +844,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Display")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Display")) {
+                            if (effForce || uiState.isExpanded("section", "Display")) {
                                 item(key = "content:Display") {
                                     InSettingsSection(cat.name, "Display") {
                                         Column(
@@ -903,7 +943,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Quote layouts")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Quote layouts")) {
+                            if (effForce || uiState.isExpanded("section", "Quote layouts")) {
                                 item(key = "content:Quote layouts") {
                                     InSettingsSection(cat.name, "Quote layouts") {
                                         QuoteLayoutsSettingsContent(
@@ -920,7 +960,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Database themes")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Database themes")) {
+                            if (effForce || uiState.isExpanded("section", "Database themes")) {
                                 item(key = "content:Database themes") {
                                     InSettingsSection(cat.name, "Database themes") {
                                         Column(
@@ -1015,7 +1055,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Wallpaper")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Wallpaper")) {
+                            if (effForce || uiState.isExpanded("section", "Wallpaper")) {
                                 item(key = "content:Wallpaper") {
                                     InSettingsSection(cat.name, "Wallpaper") {
                                         Column(
@@ -1080,7 +1120,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Widget")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Widget")) {
+                            if (effForce || uiState.isExpanded("section", "Widget")) {
                                 item(key = "content:Widget") {
                                     InSettingsSection(cat.name, "Widget") {
                                         Column(
@@ -1110,15 +1150,22 @@ fun SettingsScreen(
             // v1.59 settings category: Reading.
             run {
                 val cat = SETTINGS_CATEGORIES.first { it.name == "Reading" }
-                if (categoryVisible(cat)) {
+                if (categoryShown(cat)) {
                     val catNameMatches = settingsQueryWords.isNotEmpty() &&
                         settingsQueryWords.all { cat.name.lowercase().contains(it) }
-                    val catOpen = forceExpand || uiState.isExpanded("cat", cat.name)
+                    val catOpen = (effForce || uiState.isExpanded("cat", cat.name)) &&
+                        !(browsing && settingsPage == null)
                     item(key = "cat:${cat.name}") {
                         SettingsCategoryHeader(
                             name = cat.name,
                             expanded = catOpen,
-                            onToggle = { uiState.toggleExpanded("cat", cat.name) }
+                            onToggle = {
+                                if (browsing && settingsPage == null) {
+                                    settingsPage = cat.name
+                                } else {
+                                    uiState.toggleExpanded("cat", cat.name)
+                                }
+                            }
                         )
                     }
                     if (catOpen) {
@@ -1128,7 +1175,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Quote text")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Quote text")) {
+                            if (effForce || uiState.isExpanded("section", "Quote text")) {
                                 item(key = "content:Quote text") {
                                     InSettingsSection(cat.name, "Quote text") {
                                         Column(
@@ -1253,7 +1300,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Quote viewer")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Quote viewer")) {
+                            if (effForce || uiState.isExpanded("section", "Quote viewer")) {
                                 item(key = "content:Quote viewer") {
                                     InSettingsSection(cat.name, "Quote viewer") {
                                         Column(
@@ -1319,7 +1366,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Read aloud")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Read aloud")) {
+                            if (effForce || uiState.isExpanded("section", "Read aloud")) {
                                 item(key = "content:Read aloud") {
                                     InSettingsSection(cat.name, "Read aloud") {
                                         TtsEngineSettingsCard(
@@ -1338,7 +1385,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Voice recordings")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Voice recordings")) {
+                            if (effForce || uiState.isExpanded("section", "Voice recordings")) {
                                 item(key = "content:Voice recordings") {
                                     InSettingsSection(cat.name, "Voice recordings") {
                                         VoiceRecordingsSettingsCard(
@@ -1355,7 +1402,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Translations")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Translations")) {
+                            if (effForce || uiState.isExpanded("section", "Translations")) {
                                 item(key = "content:Translations") {
                                     InSettingsSection(cat.name, "Translations") {
                                         TranslationSettingsCard(
@@ -1371,7 +1418,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Reading goal")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Reading goal")) {
+                            if (effForce || uiState.isExpanded("section", "Reading goal")) {
                                 item(key = "content:Reading goal") {
                                     InSettingsSection(cat.name, "Reading goal") {
                                         Column(
@@ -1460,7 +1507,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Reading stats")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Reading stats")) {
+                            if (effForce || uiState.isExpanded("section", "Reading stats")) {
                                 item(key = "content:Reading stats") {
                                     InSettingsSection(cat.name, "Reading stats") {
                                         Column(
@@ -1499,7 +1546,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Content maturity")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Content maturity")) {
+                            if (effForce || uiState.isExpanded("section", "Content maturity")) {
                                 item(key = "content:Content maturity") {
                                     InSettingsSection(cat.name, "Content maturity") {
                                         Column(
@@ -1539,7 +1586,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Quote pings")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Quote pings")) {
+                            if (effForce || uiState.isExpanded("section", "Quote pings")) {
                                 item(key = "content:Quote pings") {
                                     InSettingsSection(cat.name, "Quote pings") {
                                         Column(
@@ -1896,7 +1943,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Daily reminder")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Daily reminder")) {
+                            if (effForce || uiState.isExpanded("section", "Daily reminder")) {
                                 item(key = "content:Daily reminder") {
                                     InSettingsSection(cat.name, "Daily reminder") {
                                         Column(
@@ -1923,7 +1970,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Quote alarm")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Quote alarm")) {
+                            if (effForce || uiState.isExpanded("section", "Quote alarm")) {
                                 item(key = "content:Quote alarm") {
                                     InSettingsSection(cat.name, "Quote alarm") {
                                         Column(
@@ -1947,7 +1994,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Swipe actions")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Swipe actions")) {
+                            if (effForce || uiState.isExpanded("section", "Swipe actions")) {
                                 item(key = "content:Swipe actions") {
                                     InSettingsSection(cat.name, "Swipe actions") {
                                         Column(
@@ -2004,7 +2051,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Quote length presets")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Quote length presets")) {
+                            if (effForce || uiState.isExpanded("section", "Quote length presets")) {
                                 item(key = "content:Quote length presets") {
                                     InSettingsSection(cat.name, "Quote length presets") {
                                         Column(
@@ -2064,15 +2111,22 @@ fun SettingsScreen(
             // v1.59 settings category: Your data.
             run {
                 val cat = SETTINGS_CATEGORIES.first { it.name == "Your data" }
-                if (categoryVisible(cat)) {
+                if (categoryShown(cat)) {
                     val catNameMatches = settingsQueryWords.isNotEmpty() &&
                         settingsQueryWords.all { cat.name.lowercase().contains(it) }
-                    val catOpen = forceExpand || uiState.isExpanded("cat", cat.name)
+                    val catOpen = (effForce || uiState.isExpanded("cat", cat.name)) &&
+                        !(browsing && settingsPage == null)
                     item(key = "cat:${cat.name}") {
                         SettingsCategoryHeader(
                             name = cat.name,
                             expanded = catOpen,
-                            onToggle = { uiState.toggleExpanded("cat", cat.name) }
+                            onToggle = {
+                                if (browsing && settingsPage == null) {
+                                    settingsPage = cat.name
+                                } else {
+                                    uiState.toggleExpanded("cat", cat.name)
+                                }
+                            }
                         )
                     }
                     if (catOpen) {
@@ -2082,7 +2136,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "My Quotes")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "My Quotes")) {
+                            if (effForce || uiState.isExpanded("section", "My Quotes")) {
                                 item(key = "content:My Quotes") {
                                     InSettingsSection(cat.name, "My Quotes") {
                                         Column(
@@ -2132,7 +2186,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Backup & restore")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Backup & restore")) {
+                            if (effForce || uiState.isExpanded("section", "Backup & restore")) {
                                 item(key = "content:Backup & restore") {
                                     InSettingsSection(cat.name, "Backup & restore") {
                                         Column(
@@ -2170,7 +2224,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Auto backup")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Auto backup")) {
+                            if (effForce || uiState.isExpanded("section", "Auto backup")) {
                                 item(key = "content:Auto backup") {
                                     InSettingsSection(cat.name, "Auto backup") {
                                         Column(
@@ -2250,7 +2304,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Databases")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Databases")) {
+                            if (effForce || uiState.isExpanded("section", "Databases")) {
                                 item(key = "content:Databases") {
                                     InSettingsSection(cat.name, "Databases") {
                                         Column(
@@ -2437,7 +2491,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Database updates")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Database updates")) {
+                            if (effForce || uiState.isExpanded("section", "Database updates")) {
                                 item(key = "content:Database updates") {
                                     InSettingsSection(cat.name, "Database updates") {
                                         DatabaseUpdateSection(vm = vm)
@@ -2451,7 +2505,7 @@ fun SettingsScreen(
                                     SettingsSectionHeader(text = "Features")
                                 }
                             }
-                            if (forceExpand || uiState.isExpanded("section", "Features")) {
+                            if (effForce || uiState.isExpanded("section", "Features")) {
                                 item(key = "content:Features") {
                                     InSettingsSection(cat.name, "Features") {
                                         Column(

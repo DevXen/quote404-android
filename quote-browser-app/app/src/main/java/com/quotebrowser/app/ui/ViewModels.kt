@@ -412,7 +412,12 @@ class MainViewModel(private val manager: DatabaseManager) : ViewModel() {
                 }.awaitAll()
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        // v1.89.9: Lazily, not WhileSubscribed — with the 5s unsubscribe
+        // window, a database installed from Settings/an offer while Browse
+        // was unsubscribed could stay missing from the switcher until the
+        // app restarted. Keeping the upstream hot means catalog bumps
+        // always land in this list immediately.
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     /**
      * v1.60: download-based database updates (Settings → Your data →

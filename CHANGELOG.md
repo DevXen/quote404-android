@@ -7,6 +7,20 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.9 — 2026-10-20 (versionCode 185)
+
+- **Settings reorganized into a drill-in index (Clint: "an endless scrolling
+  nightmare"):** Settings now opens to three categories — Appearance,
+  Reading, Your data — and each opens as its own page with a
+  "‹ All settings" back row (system back works too). Search still flattens
+  everything into one results list; pinned and recently-changed rows jump
+  straight to the right page.
+- **Database management** (download / uninstall / redownload) lives at
+  Settings → Your data → Databases.
+- **Newly installed databases now appear in the switcher immediately** —
+  the browse list no longer goes stale until an app restart (the TFLN
+  install needed a restart to show up).
+
 ## v1.89.4 — 2026-10-14 (versionCode 180)
 
 - **Community catalogs (Clint):** plugins now install from GitHub too.

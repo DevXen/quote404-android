@@ -45,6 +45,13 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.9", listOf(
+            "Settings reorganized: instead of one endless scroll, Settings now opens to a short index — Appearance, Reading, and Your data — and each opens as its own page (back arrow or the system back button returns to the index). Search settings works as before and still shows matching settings from everywhere in one list",
+            "Database management lives in Settings → Your data → Databases: download, uninstall, and redownload any catalog database there",
+            "A newly installed database now appears in the database switcher right away — no app restart needed"
+        )
+    ),
+    ChangelogEntry(
         "1.89.8", listOf(
             "Fixed FML and FML Spicy not showing their site themes: databases installed before their themes were baked into the file never received them, because database updates only synced the quotes. Updates now carry the database's info section (theme, source, last-scraped date) too, and affected databases repair themselves on the next launch — no reinstall needed"
         )

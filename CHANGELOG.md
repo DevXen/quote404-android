@@ -7,6 +7,27 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.10 — 2026-11-25 (versionCode 186)
+
+- **Clean mode (new feature):** a Settings → Your data → Features toggle
+  (next to Kid-safe) that swaps profanity for milder substitute words at
+  render time — fuck → fudge/frick/flip, shit → shoot/shucks/crud, ~85
+  words with variants, case preserved, the pick deterministic per quote.
+  Display-only; stored text never changes. Applies on cards, detail,
+  ambient mode, and exports (what you see is what the shared card shows);
+  composes with Kid-safe (substitution first, mask catches the rest).
+- **Automation intents (new feature):** an exported broadcast receiver for
+  Tasker / MacroDroid / adb — `com.quotebrowser.app.action.RANDOM_QUOTE`
+  and `.QUOTE_OF_THE_DAY`, with `db`, `reply_package`/`reply_action`,
+  `clipboard`, and `notify` extras; answers with a `QUOTE_RESULT`
+  broadcast (kind, db_id, db_name, number, rating, text). Picks honor the
+  ping content filters, the maturity ceiling, and Clean mode / Kid-safe.
+  Documented in Help → Automation.
+- Build recovery note: `apkbuild/build/` had been wiped; `build/aar` was
+  reconstructed from `deps.json` + `libs/` by the new
+  `apkbuild/extract_aars.py` (119 AARs), and the lifecycle-livedata-core
+  2.4.0 classes.jar swap was redone from the Google Maven AAR.
+
 ## v1.89.9 — 2026-10-20 (versionCode 185)
 
 - **Settings reorganized into a drill-in index (Clint: "an endless scrolling

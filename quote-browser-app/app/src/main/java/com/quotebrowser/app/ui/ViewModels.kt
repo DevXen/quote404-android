@@ -599,6 +599,8 @@ class MainViewModel(private val manager: DatabaseManager) : ViewModel() {
     fun setOnThisDayEnabled(enabled: Boolean) = manager.setOnThisDayEnabled(enabled)
     val kidSafeEnabled: StateFlow<Boolean> = manager.kidSafeEnabled
     fun setKidSafeEnabled(enabled: Boolean) = manager.setKidSafeEnabled(enabled)
+    val cleanModeEnabled: StateFlow<Boolean> = manager.cleanModeEnabled
+    fun setCleanModeEnabled(enabled: Boolean) = manager.setCleanModeEnabled(enabled)
     val siteShareCardsEnabled: StateFlow<Boolean> = manager.siteShareCardsEnabled
     fun setSiteShareCardsEnabled(enabled: Boolean) = manager.setSiteShareCardsEnabled(enabled)
     val explainQuoteEnabled: StateFlow<Boolean> = manager.explainQuoteEnabled

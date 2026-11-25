@@ -487,6 +487,7 @@ class DatabaseManager private constructor(private val appContext: Context) {
         private const val KEY_MEMORIZE_MODE = "memorize_mode_enabled"
         private const val KEY_ON_THIS_DAY = "on_this_day_enabled"
         private const val KEY_KID_SAFE = "kid_safe_enabled"
+        private const val KEY_CLEAN_MODE = "clean_mode_enabled"
         private const val KEY_SITE_SHARE_CARDS = "site_share_cards_enabled"
         private const val KEY_EXPLAIN_QUOTE = "explain_quote_enabled"
         private const val KEY_AMBIENT_MODE = "ambient_mode_enabled"
@@ -4621,6 +4622,13 @@ class DatabaseManager private constructor(private val appContext: Context) {
     val kidSafeEnabled: StateFlow<Boolean> = _kidSafe.asStateFlow()
     fun setKidSafeEnabled(enabled: Boolean) =
         setBoolPref(KEY_KID_SAFE, _kidSafe, enabled)
+
+    // v1.89.10 Clean mode: profanity swapped for milder substitutes at
+    // render time (ui/CleanMode.kt). Default OFF, like Kid-safe.
+    private val _cleanMode = boolPref(KEY_CLEAN_MODE, false)
+    val cleanModeEnabled: StateFlow<Boolean> = _cleanMode.asStateFlow()
+    fun setCleanModeEnabled(enabled: Boolean) =
+        setBoolPref(KEY_CLEAN_MODE, _cleanMode, enabled)
 
     private val _siteShareCards = boolPref(KEY_SITE_SHARE_CARDS, true)
     val siteShareCardsEnabled: StateFlow<Boolean> = _siteShareCards.asStateFlow()

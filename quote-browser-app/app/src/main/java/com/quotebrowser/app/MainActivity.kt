@@ -26,6 +26,7 @@ import com.quotebrowser.app.ui.QuoteCleanOptions
 import com.quotebrowser.app.ui.DisplayTransforms
 import com.quotebrowser.app.ui.TransformMode
 import com.quotebrowser.app.ui.LocalDisplayTransforms
+import com.quotebrowser.app.ui.LocalCleanModeEnabled
 import com.quotebrowser.app.ui.LocalKidSafeEnabled
 import com.quotebrowser.app.ui.LocalQuoteFontFamily
 import com.quotebrowser.app.ui.resolveQuoteFontFamily
@@ -237,6 +238,7 @@ class MainActivity : ComponentActivity() {
             val dbThemesCardsOnly by manager.dbThemesCardsOnly.collectAsState(initial = false)
             // v1.53 Kid-safe mask (display-only, default OFF).
             val kidSafeOn by manager.kidSafeEnabled.collectAsState(initial = false)
+            val cleanModeOn by manager.cleanModeEnabled.collectAsState(initial = false)
             val dbThemeSnap = remember(
                 themeId, perDbThemesOn, masterOverride, dbThemeConfigs,
                 customThemes, builtInOverrides, classicLayoutOn,
@@ -314,6 +316,8 @@ class MainActivity : ComponentActivity() {
                 LocalQueuedTagsEnabled provides queuedTagsOn,
                 // v1.53 Kid-safe mask: display-only profanity masking.
                 LocalKidSafeEnabled provides kidSafeOn,
+                // v1.89.10 Clean mode: profanity swapped for milder words.
+                LocalCleanModeEnabled provides cleanModeOn,
                 // v1.88.32: per-card-theme nick palette overrides for the
                 // share picker — read/written without a ViewModel param.
                 LocalThemeNickPaletteStore provides ThemeNickPaletteStore(

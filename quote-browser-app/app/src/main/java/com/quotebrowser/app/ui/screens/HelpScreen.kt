@@ -45,6 +45,13 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.10", listOf(
+            "Clean mode (Settings → Your data → Features, next to Kid-safe): swaps profanity for milder words at display time — fuck becomes fudge, shit becomes shoot — instead of masking it like Kid-safe does. Display only; the stored quotes never change. Each quote consistently gets its own picks",
+            "Automation intents for Tasker, MacroDroid, and scripts: send the broadcast com.quotebrowser.app.action.RANDOM_QUOTE (or .QUOTE_OF_THE_DAY) and Quote404 answers with a QUOTE_RESULT broadcast, the clipboard, or a notification — see Help → Automation for the full extras list",
+            "Exports follow Clean mode and Kid-safe, same as the screen: what you see is what the shared card shows"
+        )
+    ),
+    ChangelogEntry(
         "1.89.9", listOf(
             "Settings reorganized: instead of one endless scroll, Settings now opens to a short index — Appearance, Reading, and Your data — and each opens as its own page (back arrow or the system back button returns to the index). Search settings works as before and still shows matching settings from everywhere in one list",
             "Database management lives in Settings → Your data → Databases: download, uninstall, and redownload any catalog database there",
@@ -1060,6 +1067,24 @@ private val HELP_SECTIONS = listOf(
             "Quote Battle pits two quotes head-to-head with an ELO leaderboard; streak freeze and vacation mode protect your streak.",
             "The tournament bracket (Tournament button in Quote Arena) runs 8 quotes single-elimination; game and tournament quote pools respect your global maturity ceiling.",
             "Higher or lower and the endless deck's rate-by-swipe feed your personal ratings, which power recommendations."
+        )
+    ),
+    HelpSection(
+        "Clean mode & Kid-safe", listOf(
+            "Two display-only filters live in Settings → Your data → Features. Neither ever changes the stored quotes.",
+            "Kid-safe mask: replaces profanity with asterisks (f***), keeping the word's shape.",
+            "Clean mode: swaps profanity for a milder word instead — fuck becomes fudge or frick, shit becomes shoot or shucks, damn becomes darn. The pick is consistent per quote, so a quote reads the same way every time you open it.",
+            "Both can be on together: Clean mode swaps first, and the mask catches anything its word list doesn't cover. Shared and exported cards follow the same settings as the screen."
+        )
+    ),
+    HelpSection(
+        "Automation (Tasker & scripts)", listOf(
+            "Quote404 answers broadcast intents, so Tasker, MacroDroid, adb, and other apps can pull quotes without opening the app.",
+            "Send action com.quotebrowser.app.action.RANDOM_QUOTE for a random quote (picked with the same filters as quote pings — hidden quotes and your maturity ceiling are honored), or com.quotebrowser.app.action.QUOTE_OF_THE_DAY for today's Quote of the Day.",
+            "Optional extras on the request: db (a database id like asset:fml.db, or its exact name like FML — random picks only), reply_package + reply_action (where to send the answer; reply_action defaults to com.quotebrowser.app.action.QUOTE_RESULT), clipboard (true = also copy the quote text), notify (true = also post it as a notification). With none of those set, the quote arrives as a notification.",
+            "The result broadcast carries extras: kind (random or qotd), db_id, db_name, number, rating (blank when unrated), and text. The text follows your Clean mode / Kid-safe settings, so an automation that reposts quotes publicly sends the same text you see.",
+            "Tasker setup: Profile → Event → System → Intent Received (action above), then Task → System → Send Intent (target: Broadcast Receiver) — or simply read the QUOTE_RESULT intent in an Intent Received profile and use %text, %db_name, and %number in your task.",
+            "From a computer: adb shell am broadcast -a com.quotebrowser.app.action.RANDOM_QUOTE --ez notify true"
         )
     ),
     HelpSection(

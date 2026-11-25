@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quotebrowser.app.data.DatabaseManager
 import com.quotebrowser.app.data.Quote
+import com.quotebrowser.app.ui.LocalCleanModeEnabled
 import com.quotebrowser.app.ui.LocalKidSafeEnabled
+import com.quotebrowser.app.ui.applyCleanMode
 import com.quotebrowser.app.ui.applyKidSafeMask
 import com.quotebrowser.app.ui.rememberNickAnnotatedText
 import com.quotebrowser.app.ui.quoteTextStyle
@@ -113,6 +115,7 @@ fun AmbientScreen(
 
     val quote = quotes.getOrNull(index)
     val kidSafe = LocalKidSafeEnabled.current
+    val cleanMode = LocalCleanModeEnabled.current
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -148,7 +151,9 @@ fun AmbientScreen(
                         )
                     )
                     val displayText =
-                        if (kidSafe) applyKidSafeMask(quote.text) else quote.text
+                        if (kidSafe) applyKidSafeMask(
+                            if (cleanMode) applyCleanMode(quote.text) else quote.text
+                        ) else if (cleanMode) applyCleanMode(quote.text) else quote.text
                     Text(
                         text = rememberNickAnnotatedText(displayText, bodyStyle),
                         style = bodyStyle,

@@ -820,6 +820,7 @@ fun rememberNickAnnotatedText(text: String, style: TextStyle): AnnotatedString {
     val clean = LocalQuoteClean.current
     val transforms = LocalDisplayTransforms.current
     val kidSafe = LocalKidSafeEnabled.current
+    val cleanMode = LocalCleanModeEnabled.current
     // v1.55: contrast-adjust the nick/bracket/action colors against the
     // effective quote-body background so they stay readable (e.g. pale
     // colors on a white card darken, dark colors on a black card
@@ -830,9 +831,14 @@ fun rememberNickAnnotatedText(text: String, style: TextStyle): AnnotatedString {
         if (quoteBg != null && rawPalette.enabled) rawPalette.contrastAdjusted(quoteBg)
         else rawPalette
     }
+    // v1.89.10 Clean mode runs first (word swaps), then the v1.53 Kid-safe
+    // mask catches anything the substitution list doesn't cover. Both are
+    // display-only and applied before cleaning/coloring, so speaker
+    // parsing and span offsets work on the final displayed text.
+    val cleanedText = if (cleanMode) applyCleanMode(text) else text
     // v1.53 Kid-safe mask: display-only, applied before cleaning/coloring.
     // Masking is 1:1 per character so nick offsets stay aligned.
-    val maskedText = if (kidSafe) applyKidSafeMask(text) else text
+    val maskedText = if (kidSafe) applyKidSafeMask(cleanedText) else cleanedText
     // Split first so nick offsets line up with the displayed text.
     val displayText =
         cleanDisplayText(maskedText, palette.ircLineBreaks, palette.dialogueLineBreaks, clean)

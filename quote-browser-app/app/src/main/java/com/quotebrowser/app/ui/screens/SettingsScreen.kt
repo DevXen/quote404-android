@@ -517,6 +517,7 @@ fun SettingsScreen(
     val memorizeOn by vm.memorizeModeEnabled.collectAsStateWithLifecycle()
     val onThisDayOn by vm.onThisDayEnabled.collectAsStateWithLifecycle()
     val kidSafeOn by vm.kidSafeEnabled.collectAsStateWithLifecycle()
+    val cleanModeOn by vm.cleanModeEnabled.collectAsStateWithLifecycle()
     val siteShareCardsOn by vm.siteShareCardsEnabled.collectAsStateWithLifecycle()
     val explainOn by vm.explainQuoteEnabled.collectAsStateWithLifecycle()
     val ambientOn by vm.ambientModeEnabled.collectAsStateWithLifecycle()
@@ -2706,6 +2707,15 @@ fun SettingsScreen(
                                                             "changed). Off by default.",
                                                         checked = kidSafeOn,
                                                         onCheckedChange = vm::setKidSafeEnabled
+                                                    )
+                                                    SettingToggle(
+                                                        title = "Clean mode",
+                                                        subtitle = "Swaps profanity for milder words " +
+                                                            "instead — fuck becomes fudge, shit becomes " +
+                                                            "shoot (display only, originals untouched). " +
+                                                            "Off by default.",
+                                                        checked = cleanModeOn,
+                                                        onCheckedChange = vm::setCleanModeEnabled
                                                     )
                                                     SettingToggle(
                                                         title = "Site-styled share cards",

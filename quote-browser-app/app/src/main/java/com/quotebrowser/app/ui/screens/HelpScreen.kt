@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.89.11", listOf(
+            "Fold7 dual-pane: on wide screens (the unfolded Fold7, tablets), Browse now splits in two — the quote list stays on the left and a tapped quote opens in the right pane instead of taking over the whole screen. Tap another quote to swap it in; fold the phone or narrow the window and browsing goes back to the classic full-screen detail",
+            "Everything in the pane is the full quote view: favorite, share, categories, read-along, and the rest work exactly as on the detail screen"
+        )
+    ),
+    ChangelogEntry(
         "1.89.10", listOf(
             "Clean mode (Settings → Your data → Features, next to Kid-safe): swaps profanity for milder words at display time — fuck becomes fudge, shit becomes shoot — instead of masking it like Kid-safe does. Display only; the stored quotes never change. Each quote consistently gets its own picks",
             "Automation intents for Tasker, MacroDroid, and scripts: send the broadcast com.quotebrowser.app.action.RANDOM_QUOTE (or .QUOTE_OF_THE_DAY) and Quote404 answers with a QUOTE_RESULT broadcast, the clipboard, or a notification — see Help → Automation for the full extras list",
@@ -1090,6 +1096,7 @@ private val HELP_SECTIONS = listOf(
     HelpSection(
         "Browsing & searching", listOf(
             "Browse lists every quote, newest first; Search finds text or jumps straight to a #number.",
+            "On a wide screen (unfolded Fold7, tablet) Browse goes two-pane: the list stays on the left and tapped quotes open in the right pane. Narrow windows use the classic full-screen quote view.",
             "Length filter presets: All lengths, Longer, Shorter, 1 line, or Custom min/max words — thresholds live in Settings.",
             "Filter by rating: All, >0, >100, >1000, or your own number.",
             "Boolean search: combine terms with AND, OR, NOT and \"exact phrases\". Example: kernel AND linux NOT \"windows xp\".",

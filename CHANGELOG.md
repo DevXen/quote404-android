@@ -7,6 +7,21 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.89.11 — 2026-11-25 (versionCode 187)
+
+- **Fold7 dual-pane (new feature, completes the v1.89 lane):** Browse at
+  720dp and wider (the unfolded Fold7, tablets, wide split-screen) splits
+  into two panes — the quote list keeps the left ~46% and a tapped quote
+  opens in the right pane instead of navigating to the full-screen detail.
+  The pane hosts the full DetailScreen (same DetailViewModel wiring as the
+  detail route: favorite, share, categories, lists, read-along), keyed per
+  quote so tapping another row swaps it in. Implemented in AppNav by
+  wrapping the Browse destination and intercepting its quote/QOTD click
+  callbacks only when wide; BrowseScreen is untouched, and narrow windows
+  keep the classic navigate-to-detail flow. An empty state explains the
+  pane until the first tap. This closes the last open v1.89-lane feature
+  (after Clean mode + automation intents in v1.89.10).
+
 ## v1.89.10 — 2026-11-25 (versionCode 186)
 
 - **Clean mode (new feature):** a Settings → Your data → Features toggle

@@ -135,6 +135,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.foundation.layout.Column
 import com.quotebrowser.app.data.BattleStore
+import com.quotebrowser.app.data.BasketEntry
 import com.quotebrowser.app.data.DatabaseManager
 import com.quotebrowser.app.data.NewContentOffer
 import com.quotebrowser.app.data.QuoteListStore
@@ -585,6 +586,48 @@ private fun GlobalSearchRow(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * v1.89.11 Fold7 dual-pane: the quote detail hosted inside the Browse
+ * destination's second pane (wide windows only), instead of navigating to
+ * the full-screen detail route. Mirrors the DETAIL route's wiring — same
+ * ViewModel, same DetailScreen — keyed per quote so switching the
+ * selection swaps the pane's ViewModel.
+ */
+@Composable
+private fun QuoteDetailPane(
+    manager: DatabaseManager,
+    catVm: CategoryViewModel,
+    seedDbId: String,
+    number: Int,
+    showUrl: Boolean,
+    basket: List<BasketEntry>,
+    onToggleBasket: (String, Int) -> Unit,
+    onNickClick: (String) -> Unit,
+    quoteListStore: QuoteListStore,
+    onFollowMissed: (String, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val vm: DetailViewModel = viewModel(
+        key = "pane-$seedDbId-$number",
+        factory = vmFactory { DetailViewModel(manager, number, seedDbId) }
+    )
+    val detailDbId by vm.positionDbId.collectAsStateWithLifecycle()
+    DetailScreen(
+        vm = vm,
+        catVm = catVm,
+        manager = manager,
+        showUrl = showUrl,
+        sourceLabel = manager.shortLabel(detailDbId),
+        dbId = detailDbId,
+        basket = basket,
+        onToggleBasket = onToggleBasket,
+        onNickClick = onNickClick,
+        quoteListStore = quoteListStore,
+        onFollowMissed = onFollowMissed,
+        modifier = modifier
+    )
+}
+
 @Composable
 fun AppNav(
     manager: DatabaseManager,
@@ -1529,22 +1572,107 @@ fun AppNav(
                         right = if (swipeHomeEnabled) swipeRight else SwipeAction.NONE
                     )
                 ) {
-                    BrowseScreen(
-                        vm = browseVm,
-                        qotdVm = qotdVm,
-                        catVm = catVm,
-                        manager = manager,
-                        onQuoteClick = { dbId, number -> openQuote(dbId, number) },
-                        onQotdClick = { dbId, number -> openQuote(dbId, number) },
-                        onQotdHistoryClick = { navController.navigate(Routes.QOTD_HISTORY) },
-                        showNumber = showNumber,
-                        showRating = showRating,
-                        basket = basket,
-                        onToggleBasket = ::onToggleBasket,
-                        onAddToPlaylist = { playlistVm.append(it) },
-                        onReadAloudQuote = { playlistVm.start(listOf(it)) },
-                        onNickClick = { nick -> navController.navigate(Routes.nickDetail(nick)) }
-                    )
+                    // v1.89.11 Fold7 dual-pane: at 720dp and wider (the
+                    // unfolded Fold7, tablets, split-screen landscape) the
+                    // list keeps the left pane and a tapped quote opens in
+                    // the right pane instead of navigating away. Narrower
+                    // windows keep the classic navigate-to-detail flow.
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val wide = maxWidth >= 720.dp
+                        var paneQuote by remember {
+                            mutableStateOf<Pair<String, Int>?>(null)
+                        }
+                        val openOrPane = { dbId: String, number: Int ->
+                            if (wide) paneQuote = dbId to number
+                            else openQuote(dbId, number)
+                        }
+                        Row(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(if (wide) 0.92f else 1f)
+                                    .fillMaxHeight()
+                            ) {
+                                BrowseScreen(
+                                    vm = browseVm,
+                                    qotdVm = qotdVm,
+                                    catVm = catVm,
+                                    manager = manager,
+                                    onQuoteClick = openOrPane,
+                                    onQotdClick = openOrPane,
+                                    onQotdHistoryClick = {
+                                        navController.navigate(Routes.QOTD_HISTORY)
+                                    },
+                                    showNumber = showNumber,
+                                    showRating = showRating,
+                                    basket = basket,
+                                    onToggleBasket = ::onToggleBasket,
+                                    onAddToPlaylist = { playlistVm.append(it) },
+                                    onReadAloudQuote = { playlistVm.start(listOf(it)) },
+                                    onNickClick = { nick ->
+                                        navController.navigate(Routes.nickDetail(nick))
+                                    }
+                                )
+                            }
+                            if (wide) {
+                                VerticalDivider()
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1.08f)
+                                        .fillMaxHeight()
+                                ) {
+                                    val sel = paneQuote
+                                    if (sel == null) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(32.dp),
+                                            verticalArrangement =
+                                                Arrangement.Center,
+                                            horizontalAlignment =
+                                                Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "Tap a quote to read it here",
+                                                style = MaterialTheme.typography
+                                                    .titleMedium,
+                                                color = MaterialTheme.colorScheme
+                                                    .onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = "The list stays put while " +
+                                                    "you read — tap another quote " +
+                                                    "to swap it in.",
+                                                style = MaterialTheme.typography
+                                                    .bodyMedium,
+                                                color = MaterialTheme.colorScheme
+                                                    .onSurfaceVariant
+                                            )
+                                        }
+                                    } else {
+                                        QuoteDetailPane(
+                                            manager = manager,
+                                            catVm = catVm,
+                                            seedDbId = sel.first,
+                                            number = sel.second,
+                                            showUrl = showUrl,
+                                            basket = basket,
+                                            onToggleBasket = ::onToggleBasket,
+                                            onNickClick = { nick ->
+                                                navController.navigate(
+                                                    Routes.nickDetail(nick)
+                                                )
+                                            },
+                                            quoteListStore = quoteListStore,
+                                            onFollowMissed = { _, _ ->
+                                                paneQuote = null
+                                            },
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             composable(Routes.QOTD_HISTORY) {

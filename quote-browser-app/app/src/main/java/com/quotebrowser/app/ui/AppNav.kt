@@ -168,6 +168,7 @@ import com.quotebrowser.app.ui.screens.QuoteBattleScreen
 import com.quotebrowser.app.ui.screens.QuoteListsScreen
 import com.quotebrowser.app.ui.screens.RatingGuessScreen
 import com.quotebrowser.app.ui.screens.ExportHubScreen
+import com.quotebrowser.app.ui.screens.StickerPacksScreen
 import com.quotebrowser.app.ui.screens.GameScreen
 import com.quotebrowser.app.ui.screens.HelpScreen
 import com.quotebrowser.app.ui.screens.HistoryScreen
@@ -286,6 +287,7 @@ private object Routes {
     /** v1.63: per-nick speaker voice assignment. */
     const val SPEAKER_VOICES = "speaker_voices"
     const val EXPORT_HUB = "export_hub"
+    const val STICKERS = "stickers"
     const val OCR_IMPORT = "ocr_import"
     // v1.53: ambient mode + dedicated On-this-day screen.
     const val AMBIENT = "ambient"
@@ -2112,6 +2114,15 @@ fun AppNav(
                         exportInitialFormat = ExportFormat.TXT
                         navController.navigate(Routes.EXPORT)
                     },
+                    onBack = { navController.popBackStack() },
+                    onStickersClick = {
+                        navController.navigate(Routes.STICKERS)
+                    }
+                )
+            }
+            composable(Routes.STICKERS) {
+                StickerPacksScreen(
+                    manager = manager,
                     onBack = { navController.popBackStack() }
                 )
             }

@@ -45,6 +45,12 @@ private data class ChangelogEntry(val version: String, val items: List<String>)
 
 private val CHANGELOG = listOf(
     ChangelogEntry(
+        "1.90.0", listOf(
+            "Sticker packs are here (Export → Sticker packs): turn the current database's favorites into a pack of 512x512 sticker images — up to 30, WhatsApp's per-pack cap — and share the pack as a ZIP (stickers + tray icon + manifest) that sticker-importer apps can load into WhatsApp, Telegram, and other messengers. Stickers follow your Clean mode / Kid-safe settings",
+            "Under the hood: Quote404 now has an automated test suite (50 unit tests over the text pipeline — Clean mode, the Kid-safe mask, share formatting, username stripping, the length filter, and line-break handling) that runs on every release build"
+        )
+    ),
+    ChangelogEntry(
         "1.89.11", listOf(
             "Fold7 dual-pane: on wide screens (the unfolded Fold7, tablets), Browse now splits in two — the quote list stays on the left and a tapped quote opens in the right pane instead of taking over the whole screen. Tap another quote to swap it in; fold the phone or narrow the window and browsing goes back to the classic full-screen detail",
             "Everything in the pane is the full quote view: favorite, share, categories, read-along, and the rest work exactly as on the detail screen"
@@ -1057,6 +1063,14 @@ private val HELP_SECTIONS = listOf(
             "Checkboxes before sharing: Quote number, Rating, Web address (adds the quote's source URL), Colorize nicknames, IRC line breaks (\" \\\" separators), and Dialogue line breaks (one line per speaker).",
             "Multi-quote strip: long-press quotes to select several, then share them as one tall image.",
             "Branding: every exported image and slideshow video carries the Quote404 logo — just above the quote on designed cards, stats cards, and video frames, and in a slim plate flush against the top on Quote-theme cards, strips, and folder PNG exports. The \"Funny quotes from everywhere.\" line under the logo is drawn as crisp text so it reads."
+        )
+    ),
+    HelpSection(
+        "Sticker packs", listOf(
+            "Export → Sticker packs builds a pack from the current database's favorites: each quote is rendered as a 512x512 sticker image (white card, the quote text, a small Quote404 footer), up to 30 stickers per pack.",
+            "Name the pack, tap Create, then Share ZIP on the saved pack. The ZIP holds the sticker PNGs, a tray icon, and a pack.json manifest — feed it to any sticker-importer app to add the pack to WhatsApp, Telegram, and other messengers.",
+            "Stickers are rendered with your Clean mode / Kid-safe settings applied, exactly like the on-screen text.",
+            "Packs are stored on this device only; deleting a pack removes its files. Rebuilding a pack after favoriting more quotes is one tap."
         )
     ),
     HelpSection(

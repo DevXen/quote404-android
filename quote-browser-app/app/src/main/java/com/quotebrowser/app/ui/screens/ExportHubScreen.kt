@@ -27,7 +27,8 @@ fun ExportHubScreen(
     onQueueClick: () -> Unit,
     onExportClick: () -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onStickersClick: (() -> Unit)? = null
 ) {
     Scaffold(
         modifier = modifier,
@@ -66,6 +67,16 @@ fun ExportHubScreen(
                     icon = Icons.Filled.Download,
                     onClick = onExportClick
                 )
+            }
+            if (onStickersClick != null) {
+                item {
+                    HubRow(
+                        title = "Sticker packs",
+                        subtitle = "Turn favorites into 512x512 sticker packs for messaging apps.",
+                        icon = Icons.Filled.Download,
+                        onClick = onStickersClick
+                    )
+                }
             }
         }
     }

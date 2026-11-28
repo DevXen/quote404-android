@@ -7,6 +7,24 @@
 > listed. Dozens of intermediate builds shipped between the milestones below;
 > the surviving APKs are the ground truth for what each version contained.
 
+## v1.90.0 — 2026-11-28 (versionCode 188)
+
+- **Sticker packs (new feature):** Export → Sticker packs builds a pack
+  from the current database's favorites — each quote rendered as a
+  512x512 PNG sticker (Canvas renderer, auto-fit text, www.Quote404.com
+  footer) plus a 96x96 tray icon and a pack.json manifest, up to 30
+  stickers (WhatsApp's per-pack cap). Packs live in
+  filesDir/sticker_packs/; Share exports the pack as a ZIP for
+  sticker-importer apps (WhatsApp/Telegram). Rendering applies the
+  Clean mode / Kid-safe display transforms like the on-screen pipeline.
+- **Automated test suite (new):** the project's first — 50 JUnit tests
+  under quote-browser-app/tests/ covering Clean mode substitution,
+  the Kid-safe mask, share-text formatting, username stripping, the
+  quote-length filter, word counting, and the line-break normalizers.
+  Runner: apkbuild/run_tests.sh (JUnit 4 jars in apkbuild/test-libs/,
+  never on the app classpath). Result at release time: 50/50 passed,
+  run against the exact classes packaged into this APK.
+
 ## v1.89.11 — 2026-11-25 (versionCode 187)
 
 - **Fold7 dual-pane (new feature, completes the v1.89 lane):** Browse at
